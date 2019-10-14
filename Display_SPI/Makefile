@@ -5,7 +5,7 @@ APPLICATION = default
 BOARD ?= native
 
 # This has to be the absolute path to the RIOT base directory:
-RIOTBASE ?= $(CURDIR)/../..
+RIOTBASE ?= $(CURDIR)/..
 
 BOARD_INSUFFICIENT_MEMORY := arduino-duemilanove arduino-leonardo arduino-nano \
                              arduino-uno
@@ -34,6 +34,8 @@ QUIET ?= 1
 USEMODULE += shell
 USEMODULE += shell_commands
 USEMODULE += ps
+# Package to include:
+USEPKG += ucglib
 # include and auto-initialize all available sensors
 USEMODULE += saul_default
 

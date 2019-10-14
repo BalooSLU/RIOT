@@ -29,23 +29,64 @@
 #include "shell.h"
 #include "shell_commands.h"
 
-#ifdef MODULE_NETIF
-#include "net/gnrc/pktdump.h"
-#include "net/gnrc.h"
-#endif
+#include "xtimer.h"
+#include "periph/gpio.h"
+#include "periph/spi.h"
+#include "ucg.h"
+
+   static gpio_t pins[] = {
+	[UCG_PIN_CS] = SPI0_CS0,
+	[UCG_PIN_CD] = GPIO14,
+	[UCG_PIN_RST] = GPIO2
+    };
+
+   static uint32_t pins_enabled = (
+	(1 << UCG_PIN_CS) +
+	(1 << UCG_PIN_CD) +
+	(1 << UCG_PIN_RST)
+    );
 
 int main(void)
 {
-#ifdef MODULE_NETIF
-    gnrc_netreg_entry_t dump = GNRC_NETREG_ENTRY_INIT_PID(GNRC_NETREG_DEMUX_CTX_ALL,
-                                                          gnrc_pktdump_pid);
-    gnrc_netreg_register(GNRC_NETTYPE_UNDEF, &dump);
-#endif
+    uint32_t screen = 0;
+    ucg_t ucg;
 
-    (void) puts("Welcome to RIOT!");
 
-    char line_buf[SHELL_DEFAULT_BUFSIZE];
-    shell_run(NULL, line_buf, SHELL_DEFAULT_BUFSIZE);
+    ucg_SetPins(&ucg, pins, pins_enabled);
+    ucg_SetDevice(&ucg, SPI_DEV(0));
+    
+    ucg_Init(&ucg, ucg_dev_st7735_18x128x160, ucg_ext_st7735_18, ucg_com_riotos_hw_spi);
+ 
+/* initialize the display */
+    puts("Initializing display.");
+
+    ucg_SetFontMode(&ucg, UCG_FONT_MODE_TRANSPARENT);
+    ucg_SetFont(&ucg, ucg_font_helvB12_tf);
+
+    /* start drawing in a loop */
+    puts("Drawing on screen.");
+
+    while (1) {
+        ucg_ClearScreen(&ucg);
+
+        switch (screen) {
+            case 0:
+                ucg_SetColor(&ucg, 0, 189, 32, 43);
+                ucg_DrawString(&ucg, 0, 20, 0, "THIS");
+                break;
+            case 1:
+                ucg_SetColor(&ucg, 0, 63, 167, 136);
+                ucg_DrawString(&ucg, 0, 20, 0, "IS");
+                break;
+        }
+
+
+        /* show screen in next iteration */
+        screen = (screen + 1) % 2;
+
+        /* sleep a little */
+        xtimer_sleep(1);
+    }
 
     return 0;
 }
