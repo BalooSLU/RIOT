@@ -15,6 +15,9 @@ $ git commit -m "Changes Comment"
 $ git add VERGESSENE_DATEI
 $ git commit --amend
 
+Make:
+$ BUILD_IN_DOCKER=1 BOARD=esp32-wroom-32 make all flash term  
+$ sudo BUILD_IN_DOCKER=1 BOARD=esp32-wroom-32 make all flash term ESPTOOL=$(which esptool) FLASH=$(which esptool) PREFLASHER=$(which esptool)   
 
 
 [![Nightly CI status master][master-ci-badge]][master-ci-link]
