@@ -24,7 +24,7 @@
 #include "ucg.h"
 #include "logo.h"
 
-#define TEXT_UL "Temp:"		//text left up
+#define TEXT_UL "Temperatur:"		//text left up
 #define TEXT_UR	"Humi:"		//text right up
 #define TEXT_DL "Time:"		//text left down
 #define TEXT_DR "State:"	//text right down
@@ -35,22 +35,23 @@
 #define FRAME_EGDE_RADIUS 3	//Radius for the four edges.
 #define TEXT_OFFSET_W 3		//die Rahmen um die boxen erzeugen einen offset wo keine Schrift rein kann. (in der breite)
 #define TEXT_OFFSET_H 3		//die Rahmen um die boxen erzeugen einen offset wo keine Schrift rein kann. (in der hoehe)
-#define COLS 2
-#define LINES 2
-#define FRAME_WIDTH (DISP_WIDTH / COLS)
-#define FRAME_HIGHT (DISP_HIGHT / LINES)
-#define VAR_TEXT_LENGTH_MAX (FRAME_WIDTH - 2 *TEXT_OFFSET_W)   
-#define VAR_TEXT_POSITION_H (FRAME_HIGHT/2 + VAR_TEXT_HIGHT)
+#define COLS 2			//Anzahl der boxen (in der breite)
+#define LINES 2			//Anzahl der boxen (in der hoehe)
+#define FRAME_WIDTH (DISP_WIDTH / COLS)	//groesse der boxen (in der breite)
+#define FRAME_HIGHT (DISP_HIGHT / LINES)//groesse der boxen (in der hoehe)
+#define VAR_TEXT_LENGTH_MAX (FRAME_WIDTH - 2 *TEXT_OFFSET_W) // maximale Anzahl an Pixel für eine Variable (in der breite)   
+#define VAR_TEXT_POSITION_H (FRAME_HIGHT/2 + VAR_TEXT_HIGHT) // hoehe wo die Variable hingeschrieben wird
+
 
 // text_check MODES
-#define MODE_VARIABLE 1
-#define MODE_TITLE    2
+#define MODE_VARIABLE 0x33
+#define MODE_TITLE    0x32
 
 void frame(ucg_t* ucg, int line, int colum);
 void title(ucg_t* ucg, char text[], int line, int colum);
 void variable(ucg_t* ucg, char text[], int line, int colum);
 void clearVar(ucg_t* ucg, int line, int colum);
-void check_text(ucg_t* ucg, char *quelle, char *ziel);
+void check_text(ucg_t* ucg, char *quelle, char *ziel, char mode);
 
 static gpio_t pins[] = {
 	[UCG_PIN_CS] = GPIO5,			// Chip select
@@ -116,7 +117,7 @@ int main(void)
 	 	break;
             case 1:
 		variable(&ucg, "1234567889", 0,0);
-		variable(&ucg, "2", 0,1);
+		variable(&ucg, "212", 0,1);
 		variable(&ucg, "3", 1,0);
 		variable(&ucg, "4", 1,1);
 		screen = 0;		
@@ -124,12 +125,12 @@ int main(void)
 	    case 2:
 		break;
 	     case 3:
-		//Riot Logo test only
+		//Camera test only
 		ucg_ClearScreen(&ucg);
 		for (int y = 0; y < 48; y++) {
                     for (int x = 0; x < 96; x++) {
                         uint32_t offset = (x + (y * 96)) * 3;
-
+			//BGR
                         ucg_SetColor(&ucg, 0, logo[offset + 2], logo[offset + 1],logo[offset + 0] );
                         ucg_DrawPixel(&ucg, x, y);
                     }
@@ -153,7 +154,7 @@ void frame(ucg_t* ucg, int line, int colum)
 	// draw frame
 	ucg_DrawRFrame(ucg, colum * FRAME_WIDTH,  line * FRAME_HIGHT, FRAME_WIDTH, FRAME_HIGHT, FRAME_EGDE_RADIUS);
 }
-			// Text Position
+			// Text Position example
 			/*      --------------------
 			*  	- 0.0	-	0.1-
 			*	--------------------
@@ -166,11 +167,14 @@ void title(ucg_t* ucg, char text[], int line, int colum)
 	ucg_SetColor(ucg, 0, 189, 32, 43);	
 	// change font
 	ucg_SetFont(ucg, ucg_font_timB08_hf);		
+	// test text	
+	char checked_text[] = " ";
+	check_text(ucg, text, checked_text, MODE_TITLE);
 	// draw text
 	ucg_DrawString(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (TITLE_TEXT_HIGHT + TEXT_OFFSET_H), 0, text);
 }
 
-			// Variable Position
+			// Variable Position example
 			/*      --------------------
 			*  	- 0.0	-	0.1-
 			*	--------------------
@@ -186,8 +190,9 @@ void variable(ucg_t* ucg, char text[], int line, int colum)
 	ucg_SetColor(ucg, 0, 63, 167, 136);	
 	// change font
 	ucg_SetFont(ucg, ucg_font_helvB12_tf);
+	// test text
 	char checked_text[] = " ";
-	check_text(ucg, text, checked_text);
+	check_text(ucg, text, checked_text, MODE_VARIABLE);
 	ucg_DrawString(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + VAR_TEXT_POSITION_H, 0, checked_text);
 }
 
@@ -197,21 +202,31 @@ void clearVar(ucg_t* ucg, int line, int colum)
 	ucg_DrawBox(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (VAR_TEXT_POSITION_H - VAR_TEXT_HIGHT), VAR_TEXT_LENGTH_MAX, VAR_TEXT_HIGHT);
 }
 
-void check_text(ucg_t* ucg, char *quelle, char *ziel)
+void check_text(ucg_t* ucg, char *quelle, char *ziel, char mode)
 {	
 	char out[16];
-	strcpy(out, quelle);
-	
 	int str_length = strlen(quelle);
+	char ending[2];
+
+	strcpy(out, quelle);
+	switch(mode){
+		case MODE_VARIABLE:
+			strcpy(ending, "."); 
+			break;
+		case MODE_TITLE:
+			strcpy(ending, ".:"); 
+			break;
+		default:strcpy(ending, "");  break;
+	}
 	while (ucg_GetStrWidth(ucg, out) >= FRAME_WIDTH)
 	{	
 		if(str_length > 1)
 		{	
 			str_length--;
 			out[str_length] = '\0';
-			strcat(out, ".");
+			strcat(out, ending);
 			puts(out);
 		}else break;
 	}
- 	strcpy(ziel, out);	
+ 	strcpy(ziel, out);		
 } 
