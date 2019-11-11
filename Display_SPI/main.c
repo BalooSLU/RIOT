@@ -24,34 +24,53 @@
 #include "ucg.h"
 #include "logo.h"
 
-#define TEXT_UL "Temperatur:"		//text left up
-#define TEXT_UR	"Humi:"		//text right up
+#define VAR_FONT ucg_font_7x14B_tf
+#define TITLE_FONT ucg_font_timB08_hf
+#define TEXT_UL "Temperatur:"	//text left up
+#define TEXT_UR	"Humitity:"	//text right up
 #define TEXT_DL "Time:"		//text left down
 #define TEXT_DR "State:"	//text right down
 #define DISP_WIDTH 128		//display width
 #define DISP_HIGHT 128		//display hight
-#define VAR_TEXT_HIGHT 12	//groesse der Variablenschrift
+#define VAR_TEXT_HIGHT 10	//groesse der Variablenschrift
+#define VAR_TEXT_PLUS 4		//unterer Bereich von "gyqj"
 #define TITLE_TEXT_HIGHT 8	//groesse der Titelschrift
 #define FRAME_EGDE_RADIUS 3	//Radius for the four edges.
 #define TEXT_OFFSET_W 3		//die Rahmen um die boxen erzeugen einen offset wo keine Schrift rein kann. (in der breite)
 #define TEXT_OFFSET_H 3		//die Rahmen um die boxen erzeugen einen offset wo keine Schrift rein kann. (in der hoehe)
-#define COLS 2			//Anzahl der boxen (in der breite)
-#define LINES 2			//Anzahl der boxen (in der hoehe)
+#define COLS 1			//Anzahl der boxen (in der breite)
+#define LINES 1			//Anzahl der boxen (in der hoehe)
+#define QBOXES (COLS * LINES) 	//Anzahl der boxen (pro page)
 #define FRAME_WIDTH (DISP_WIDTH / COLS)	//groesse der boxen (in der breite)
 #define FRAME_HIGHT (DISP_HIGHT / LINES)//groesse der boxen (in der hoehe)
 #define VAR_TEXT_LENGTH_MAX (FRAME_WIDTH - 2 *TEXT_OFFSET_W) // maximale Anzahl an Pixel für eine Variable (in der breite)   
 #define VAR_TEXT_POSITION_H (FRAME_HIGHT/2 + VAR_TEXT_HIGHT) // hoehe wo die Variable hingeschrieben wird
 
-
-// text_check MODES
+// text_check() MODES
 #define MODE_VARIABLE 0x33
 #define MODE_TITLE    0x32
 
+void drawTitles(ucg_t* ucg);
+void drawVariables(ucg_t* ucg);
+void drawFrames(ucg_t* ucg);
+void addParam(char title[], char variable[],int line, int colum);
 void frame(ucg_t* ucg, int line, int colum);
 void title(ucg_t* ucg, char text[], int line, int colum);
 void variable(ucg_t* ucg, char text[], int line, int colum);
 void clearVar(ucg_t* ucg, int line, int colum);
 void check_text(ucg_t* ucg, char *quelle, char *ziel, char mode);
+void changePage(uint8_t page);
+
+typedef struct {
+char title[50];
+char variable[50];
+int line;
+int colum;
+int page;
+}showText;
+
+static showText showTex[100];
+static int nr = 0;
 
 static gpio_t pins[] = {
 	[UCG_PIN_CS] = GPIO5,			// Chip select
@@ -97,32 +116,43 @@ int main(void)
 
     ucg_ClearScreen(&ucg);
     ucg_SetFontPosBaseline(&ucg);
-
+    
+    addParam(TEXT_UL, "1234567889", 0,0);
+    strcpy(showTex[1].title, TEXT_UR);
+    strcpy(showTex[2].title, TEXT_DL);
+    strcpy(showTex[3].title, TEXT_DR);
+    
     while (1) {
        
         switch (screen) {
             case 0:
-		ucg_ClearScreen(&ucg);
+		//ucg_ClearScreen(&ucg);
 		// Start up Display
-		frame(&ucg, 0, 0);
-		frame(&ucg, 0, 1);
+		drawFrames(&ucg);
+		drawTitles(&ucg);
+		/*frame(&ucg, 0, 1);
 		frame(&ucg, 1, 0);
 		frame(&ucg, 1, 1);
-		title(&ucg, TEXT_UL, 0, 0);
 		title(&ucg, TEXT_UR, 0, 1);
 		title(&ucg, TEXT_DL, 1, 0);
-		title(&ucg, TEXT_DR, 1, 1);
+		title(&ucg, TEXT_DR, 1, 1);*/
        		/* show screen in next iteration */
         	screen += 1;
 	 	break;
             case 1:
-		variable(&ucg, "1234567889", 0,0);
-		variable(&ucg, "212", 0,1);
+		drawVariables(&ucg);
+		//variable(&ucg, "1234567889", 0,0);
+		/*variable(&ucg, "212", 0,1);
 		variable(&ucg, "3", 1,0);
-		variable(&ucg, "4", 1,1);
-		screen = 0;		
+		variable(&ucg, "4", 1,1);*/
+		screen += 1;		
                 break;
 	    case 2:
+		variable(&ucg, "987654321", 0,0);
+		/*variable(&ucg, "Every", 0,1);
+		variable(&ucg, "Variable", 1,0);
+		variable(&ucg, "Changed", 1,1);*/
+		screen = 0;
 		break;
 	     case 3:
 		//Camera test only
@@ -139,14 +169,75 @@ int main(void)
 		break;
         }
 
-
-
         /* sleep a little */
         xtimer_sleep(1);
     }
 
     return 0;
 }
+void addParam(char title[], char variable[])
+{	
+	uint8_t page = 0;				// Anzahl der Seiten
+	uint8_t position = 0;				// Position auf der Seite
+	uint8_t line = 0;
+	uint8_t colum = 0;
+
+	if(nr > QBOXES)
+	{ 
+		page = (uint8_t) (nr / QBOXES);		
+		position = (uint8_t) (nr % QBOXES); 	
+	}else
+	{	page = 0;
+		position = nr;
+	}
+	// ** Leerzeichen abfangen 
+	strcpy(showTex[nr].title, title);
+	strcpy(showTex[nr].variable, variable);
+	
+	line = (uint8_t) (position/ LINES);
+	colum = 		
+	showTex[nr].line = line;
+	showTex[nr].colum = colum;
+	
+	showTex[nr].page = page;
+	nr ++;
+}
+void drawFrames(ucg_t* ucg)
+{	
+	for(int l=0; l < LINES; l++)
+	{
+		for(int c=0; c < COLS; c++)
+		{
+			frame(ucg, l, c);
+		}
+	}
+}
+
+void drawTitles(ucg_t* ucg)
+{
+	for(int l=0; l < LINES; l++)
+	{
+		for(int c=0; c < COLS; c++)
+		{
+			title(ucg,showTex[(l*COLS)+c].title, l, c);
+		}
+	}
+}
+void drawVariables(ucg_t* ucg)
+{
+	for(int l=0; l < LINES; l++)
+	{
+		for(int c=0; c < COLS; c++)
+		{
+			variable(ucg,showTex[(l*COLS)+c].variable, l, c);
+		}
+	}	
+}
+void changePage(uint8_t page)
+{
+
+}
+
 //1. Draw Frame 
 void frame(ucg_t* ucg, int line, int colum)
 {	
@@ -166,12 +257,12 @@ void title(ucg_t* ucg, char text[], int line, int colum)
 {	
 	ucg_SetColor(ucg, 0, 189, 32, 43);	
 	// change font
-	ucg_SetFont(ucg, ucg_font_timB08_hf);		
+	ucg_SetFont(ucg, TITLE_FONT);		
 	// test text	
 	char checked_text[] = " ";
 	check_text(ucg, text, checked_text, MODE_TITLE);
 	// draw text
-	ucg_DrawString(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (TITLE_TEXT_HIGHT + TEXT_OFFSET_H), 0, text);
+	ucg_DrawString(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (TITLE_TEXT_HIGHT + TEXT_OFFSET_H), 0, checked_text);
 }
 
 			// Variable Position example
@@ -189,7 +280,7 @@ void variable(ucg_t* ucg, char text[], int line, int colum)
 	// change Color	
 	ucg_SetColor(ucg, 0, 63, 167, 136);	
 	// change font
-	ucg_SetFont(ucg, ucg_font_helvB12_tf);
+	ucg_SetFont(ucg, VAR_FONT);
 	// test text
 	char checked_text[] = " ";
 	check_text(ucg, text, checked_text, MODE_VARIABLE);
@@ -199,34 +290,36 @@ void variable(ucg_t* ucg, char text[], int line, int colum)
 void clearVar(ucg_t* ucg, int line, int colum)
 {
 	ucg_SetColor(ucg, 0, 0, 0, 0);
-	ucg_DrawBox(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (VAR_TEXT_POSITION_H - VAR_TEXT_HIGHT), VAR_TEXT_LENGTH_MAX, VAR_TEXT_HIGHT);
+	ucg_DrawBox(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (VAR_TEXT_POSITION_H - VAR_TEXT_HIGHT), VAR_TEXT_LENGTH_MAX, (VAR_TEXT_HIGHT + VAR_TEXT_PLUS));
 }
 
 void check_text(ucg_t* ucg, char *quelle, char *ziel, char mode)
 {	
-	char out[16];
-	int str_length = strlen(quelle);
-	char ending[2];
+	char out[16];				// ausgabe string
+	int str_length = strlen(quelle);	// string laenge
+	char ending[3];				// was ans ende angehängt wird
+	uint8_t less = 0;			// menge an zu löschenden Zeichen
 
 	strcpy(out, quelle);
 	switch(mode){
 		case MODE_VARIABLE:
-			strcpy(ending, "."); 
+			strcpy(ending, ".");
+			less = 1; 
 			break;
 		case MODE_TITLE:
-			strcpy(ending, ".:"); 
+			strcpy(ending, " .:"); 
+			less = 2;
 			break;
 		default:strcpy(ending, "");  break;
 	}
-	while (ucg_GetStrWidth(ucg, out) >= FRAME_WIDTH)
+	while (ucg_GetStrWidth(ucg, out) > FRAME_WIDTH - TEXT_OFFSET_W)
 	{	
 		if(str_length > 1)
 		{	
-			str_length--;
+			str_length -= less;
 			out[str_length] = '\0';
 			strcat(out, ending);
-			puts(out);
 		}else break;
 	}
  	strcpy(ziel, out);		
-} 
+}
