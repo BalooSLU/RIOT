@@ -38,8 +38,8 @@
 #define FRAME_EGDE_RADIUS 3	//Radius for the four edges.
 #define TEXT_OFFSET_W 3		//die Rahmen um die boxen erzeugen einen offset wo keine Schrift rein kann. (in der breite)
 #define TEXT_OFFSET_H 3		//die Rahmen um die boxen erzeugen einen offset wo keine Schrift rein kann. (in der hoehe)
-#define COLS 1			//Anzahl der boxen (in der breite)
-#define LINES 1			//Anzahl der boxen (in der hoehe)
+#define COLS 2			//Anzahl der boxen (in der breite)
+#define LINES 2			//Anzahl der boxen (in der hoehe)
 #define QBOXES (COLS * LINES) 	//Anzahl der boxen (pro page)
 #define FRAME_WIDTH (DISP_WIDTH / COLS)	//groesse der boxen (in der breite)
 #define FRAME_HIGHT (DISP_HIGHT / LINES)//groesse der boxen (in der hoehe)
@@ -50,10 +50,10 @@
 #define MODE_VARIABLE 0x33
 #define MODE_TITLE    0x32
 
-void drawTitles(ucg_t* ucg);
-void drawVariables(ucg_t* ucg);
-void drawFrames(ucg_t* ucg);
-void addParam(char title[], char variable[],int line, int colum);
+void drawTitles(ucg_t* ucg, uint8_t inputpage);
+void drawVariables(ucg_t* ucg, uint8_t inputpage);
+void drawFrames(ucg_t* ucg, uint8_t inputpage);
+void addParam(char title[], char variable[]);
 void frame(ucg_t* ucg, int line, int colum);
 void title(ucg_t* ucg, char text[], int line, int colum);
 void variable(ucg_t* ucg, char text[], int line, int colum);
@@ -70,8 +70,8 @@ int page;
 }showText;
 
 static showText showTex[100];
-static int nr = 0;
-
+static uint8_t nr = 0;		// letzter Eintrag in die Struktur 
+static uint8_t max_page = 0; 	// maximale Seitenanzahl
 static gpio_t pins[] = {
 	[UCG_PIN_CS] = GPIO5,			// Chip select
 	[UCG_PIN_CD] = GPIO14,			// Command/Data or A0 
@@ -117,41 +117,34 @@ int main(void)
     ucg_ClearScreen(&ucg);
     ucg_SetFontPosBaseline(&ucg);
     
-    addParam(TEXT_UL, "1234567889", 0,0);
-    strcpy(showTex[1].title, TEXT_UR);
-    strcpy(showTex[2].title, TEXT_DL);
-    strcpy(showTex[3].title, TEXT_DR);
-    
+    addParam(TEXT_UL, "1234567889");
+    addParam(TEXT_UR, "2");
+    addParam(TEXT_DL, "3");
+    addParam(TEXT_DR, "4");
+    addParam("nextSite", "5");
     while (1) {
        
         switch (screen) {
             case 0:
 		//ucg_ClearScreen(&ucg);
 		// Start up Display
-		drawFrames(&ucg);
-		drawTitles(&ucg);
-		/*frame(&ucg, 0, 1);
-		frame(&ucg, 1, 0);
-		frame(&ucg, 1, 1);
-		title(&ucg, TEXT_UR, 0, 1);
-		title(&ucg, TEXT_DL, 1, 0);
-		title(&ucg, TEXT_DR, 1, 1);*/
-       		/* show screen in next iteration */
+		drawFrames(&ucg, 0);
+		drawTitles(&ucg, 0);
+		drawVariables(&ucg, 0);
+
         	screen += 1;
 	 	break;
             case 1:
-		drawVariables(&ucg);
-		//variable(&ucg, "1234567889", 0,0);
-		/*variable(&ucg, "212", 0,1);
-		variable(&ucg, "3", 1,0);
-		variable(&ucg, "4", 1,1);*/
+		ucg_ClearScreen(&ucg);
+		if(max_page >= 1)
+		{
+			drawFrames(&ucg, 1);
+			//drawTitles(&ucg, 1);
+			//drawVariables(&ucg, 1);
+		}
 		screen += 1;		
                 break;
 	    case 2:
-		variable(&ucg, "987654321", 0,0);
-		/*variable(&ucg, "Every", 0,1);
-		variable(&ucg, "Variable", 1,0);
-		variable(&ucg, "Changed", 1,1);*/
 		screen = 0;
 		break;
 	     case 3:
@@ -179,10 +172,8 @@ void addParam(char title[], char variable[])
 {	
 	uint8_t page = 0;				// Anzahl der Seiten
 	uint8_t position = 0;				// Position auf der Seite
-	uint8_t line = 0;
-	uint8_t colum = 0;
-
-	if(nr > QBOXES)
+	
+	if(nr >= QBOXES)
 	{ 
 		page = (uint8_t) (nr / QBOXES);		
 		position = (uint8_t) (nr % QBOXES); 	
@@ -193,27 +184,46 @@ void addParam(char title[], char variable[])
 	// ** Leerzeichen abfangen 
 	strcpy(showTex[nr].title, title);
 	strcpy(showTex[nr].variable, variable);
-	
-	line = (uint8_t) (position/ LINES);
-	colum = 		
-	showTex[nr].line = line;
-	showTex[nr].colum = colum;
-	
+	if(position == 0)
+	{
+		showTex[nr].line = 0;
+		showTex[nr].colum = 0; 
+	}else
+	{	
+		showTex[nr].line = (uint8_t) (position / COLS);
+		showTex[nr].colum = (uint8_t) ((position % COLS)-1); 
+	}
 	showTex[nr].page = page;
+	max_page = page;
+	printf("%d\n", nr);
 	nr ++;
 }
-void drawFrames(ucg_t* ucg)
+//** 
+void drawFrames(ucg_t* ucg, uint8_t inputpage)
 {	
-	for(int l=0; l < LINES; l++)
+	uint8_t line = 0;
+	uint8_t cols = 0;
+	
+	if(inputpage < max_page)				// full Page
 	{
-		for(int c=0; c < COLS; c++)
+		line = LINES;
+		cols = COLS;
+	}else if(inputpage == max_page)				// teils full
+	{
+		uint8_t position = (uint8_t) ((nr + 1) % QBOXES); //<---*
+		line = (uint8_t) (position / COLS);
+		cols = (uint8_t) ((position % COLS)-1); 
+	}
+	for(int l=0; l < line; l++)
+	{
+		for(int c=0; c < cols; c++)
 		{
 			frame(ucg, l, c);
 		}
 	}
 }
 
-void drawTitles(ucg_t* ucg)
+void drawTitles(ucg_t* ucg, uint8_t inputpage)
 {
 	for(int l=0; l < LINES; l++)
 	{
@@ -223,7 +233,7 @@ void drawTitles(ucg_t* ucg)
 		}
 	}
 }
-void drawVariables(ucg_t* ucg)
+void drawVariables(ucg_t* ucg, uint8_t inputpage)
 {
 	for(int l=0; l < LINES; l++)
 	{
@@ -272,7 +282,7 @@ void title(ucg_t* ucg, char text[], int line, int colum)
 			*  	- 1.0	-	1.1-
 			*	--------------------
 			*/
-//*3. Variable Text
+//3. Variable Text
 void variable(ucg_t* ucg, char text[], int line, int colum)
 {	
 	//clear area
