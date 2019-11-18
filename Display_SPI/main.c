@@ -72,7 +72,6 @@ char variable[50];
 int line;
 int colum;
 int page;
-struct showText * next;
 };
 
 static showText showTex[100];
