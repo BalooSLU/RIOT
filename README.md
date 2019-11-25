@@ -1,23 +1,21 @@
 Get:
-$ git clone https://github.com/BalooSLU/RIOT.git
-$ git branch
-$ git checkout Display
-$ git branch
-$ git config --global user.name "UserName"
-$ git config --global user.email "Email"
-$ git config --global color.ui "auto"
+* $ git clone https://github.com/BalooSLU/RIOT.git
+* $ git branch
+* $ git checkout Display
+* $ git branch
+* $ git config --global user.name "UserName"
+* $ git config --global user.email "Email"
+* $ git config --global color.ui "auto"
 
 Push: 
-$ git add DATEI
-$ git add *
-$ git commit -m "Changes Comment"
-// Vergessene Datei nachpflegen
-$ git add VERGESSENE_DATEI
-$ git commit --amend
+* $ git add DATEI
+* $ git add *
+* $ git commit -m "Changes Comment"
+* $ git push
 
 Make:
-$ BUILD_IN_DOCKER=1 BOARD=esp32-wroom-32 make all flash term  
-$ sudo BUILD_IN_DOCKER=1 BOARD=esp32-wroom-32 make all flash term ESPTOOL=$(which esptool) FLASH=$(which esptool) PREFLASHER=$(which esptool)   
+* $ BUILD_IN_DOCKER=1 BOARD=esp32-wroom-32 make all flash term  
+* $ sudo BUILD_IN_DOCKER=1 BOARD=esp32-wroom-32 make all flash term ESPTOOL=$(which esptool) FLASH=$(which esptool) PREFLASHER=$(which esptool)   
 
 
 [![Nightly CI status master][master-ci-badge]][master-ci-link]
