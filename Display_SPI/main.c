@@ -72,7 +72,7 @@ void clearVar(ucg_t *ucg, int line, int colum);
 void check_text(ucg_t *ucg, char *quelle, char *ziel, char mode);
 void changePage(ucg_t *ucg, uint8_t page);
 void init_disp(ucg_t *ucg);
-void init_pins(void);
+void init_pins(ucg_t *ucg);
 void pin_up_handler(void *arg);
 void pin_down_handler(void *arg);
 
@@ -88,7 +88,7 @@ static gpio_t pins[] = {
 // Pin out for ESP-WROOM-32
 /* 	Diplay 	-	MCU
 			*-----------------------------
-			*		LED	-	3V3
+			*	LED	-	3V3
 			*  	SCK	-	D18
 			*  	SDA	-	D23
 			*  	A0	-	D14
@@ -100,14 +100,14 @@ static gpio_t pins[] = {
 static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
 								(1 << UCG_PIN_CD) +
 								(1 << UCG_PIN_RST));
-ucg_t ucg;
+
 int main(void)
 {
-	static showText_t showDown[24];
-	//uint32_t screen = 0;
+	static showText_t showDown[28];
+	ucg_t ucg;
 
 	init_disp(&ucg);
-	init_pins();
+	init_pins(&ucg);
 
 	addParam(&showDown[0], TEXT_UL, "1234567889");
 	addParam(&showDown[1], TEXT_UR, "2");
@@ -115,106 +115,72 @@ int main(void)
 	addParam(&showDown[3], TEXT_DR, "4");
 	addParam(&showDown[4], "NextSite", "5");
 	addParam(&showDown[5], "FullSide", "9");
-	addParam(&showDown[6], "FullSide", "9");
-	addParam(&showDown[7], "FullSide", "9");
-	addParam(&showDown[8], "FullSide", "9");
-	addParam(&showDown[9], "FullSide", "9");
-	addParam(&showDown[10], "FullSide", "9");
-	addParam(&showDown[11], "FullSide", "9");
-	addParam(&showDown[12], "FullSide", "9");
-	addParam(&showDown[13], "FullSide", "9");
-	addParam(&showDown[14], "FullSide", "9");
-	addParam(&showDown[15], "FullSide", "9");
-	addParam(&showDown[16], "FullSide", "9");
-	addParam(&showDown[17], "FullSide", "9");
-	addParam(&showDown[18], "FullSide", "9");
-	addParam(&showDown[19], "FullSide", "9");
-	addParam(&showDown[20], "FullSide", "9");
-	addParam(&showDown[21], "FullSide", "9");
-	addParam(&showDown[22], "FullSide", "9");
-	addParam(&showDown[23], "FullSide", "9");
+	addParam(&showDown[6], "FullSide", "2");
+	addParam(&showDown[7], "qw", "3");
+	addParam(&showDown[8], "FullSide", "123");
+	addParam(&showDown[9], "q", "4467");
+	addParam(&showDown[10], "FullSide", "33222");
+	addParam(&showDown[11], "re", "12356");
+	addParam(&showDown[12], "FulldfSide", "433445");
+	addParam(&showDown[13], "vx", "2234567");
+	addParam(&showDown[14], "kglr", "89777");
+	addParam(&showDown[15], "zziioosa", "5544");
+	addParam(&showDown[16], "ffddss", "3456");
+	addParam(&showDown[17], "sdccvbbb", "78866");
+	addParam(&showDown[18], "sdfkfgrr", "33558");
+	addParam(&showDown[19], "dfgksdkfr", "2221");
+	addParam(&showDown[20], "daeglfkg", "2");
+	addParam(&showDown[21], "ddc", "345");
+	addParam(&showDown[22], "fgf", "678");
+	addParam(&showDown[23], "izih", "44664");
 	puts("Starting Pages");
+	changePage(&ucg, 0);
 	while (1)
 	{
-		/*
-		switch (screen)
-		{
-		case 0:
-			changePage(&ucg, 0);
-			screen += 1;
-			break;
-		case 1:
-			changePage(&ucg, 1);
-			screen += 1;
-			break;
-		case 2:
-			changePage(&ucg, 2);
-			screen = 0;
-			break;
-		case 3:
-			//changePage(&ucg, 3);
-			screen += 1;
-			break;
-		case 4:
-			//changePage(&ucg, 4);
-			screen = 0;
-			break;
-		case 5:
-			//Camera test only
-			ucg_ClearScreen(&ucg);
-			for (int y = 0; y < 48; y++)
-			{
-				for (int x = 0; x < 96; x++)
-				{
-					uint32_t offset = (x + (y * 96)) * 3;
-					//BGR
-					ucg_SetColor(&ucg, 0, logo[offset + 2], logo[offset + 1], logo[offset + 0]);
-					ucg_DrawPixel(&ucg, x, y);
-				}
-			}
-			screen = 0;
-			break;
-		}*/
-
 		/* sleep a little */
 		xtimer_sleep(1);
 	}
 	return 0;
 }
 
-void init_pins(void)
+void init_pins(ucg_t *ucg)
 {
-	gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, pin_up_handler, NULL);
-	gpio_init_int(GPIO2, GPIO_IN_PD, GPIO_RISING, pin_down_handler, NULL);
+	gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, pin_up_handler, ucg);
+	gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, pin_down_handler, ucg);
 }
 void pin_up_handler(void *arg)
 {
+	ucg_t *lucg = arg;
 
 	puts("Interrupt Up");
 	if (curr_page == max_page)
 		return;
 	curr_page += 1;
 	printf("%d \n", curr_page);
-	changePage(&ucg, curr_page);
+	changePage(lucg, curr_page);
 }
 void pin_down_handler(void *arg)
 {
+	ucg_t *lucg = arg;
+
 	puts("Interrupt Down");
 	if (curr_page == 0)
 		return;
 	curr_page -= 1;
 	printf("%d \n", curr_page);
-	changePage(&ucg, curr_page);
+	changePage(lucg, curr_page); // aus Interrupt nehmen, wegen rechenzeit
 }
 // funktion um die Struktur richtig zu fuellen.
 void addParam(showText_t *space, char title[], char variable[])
 {
 	showText_t *current = &head;
 
-	while (current->next != NULL)
+	while (current->next != NULL) // iteriert durch die linked liste zum letzten eintrag
 	{
 		current = current->next;
 	}
+	if (current == space) // stopen von schleifen
+		return;
 
 	current->next = space; // fuegt neue structur zum ende der liste
 
@@ -238,7 +204,7 @@ void drawFrames(ucg_t *ucg, uint8_t inputpage)
 	uint8_t l = 0;
 	uint8_t c = 0;
 
-	if (inputpage < max_page)
+	if (inputpage > max_page)
 		return;
 	if (nr == 0)
 		return;
@@ -356,7 +322,7 @@ void init_disp(ucg_t *ucg)
 
 void frame(ucg_t *ucg, int line, int colum)
 {
-	if (line < LINES || colum < COLS)
+	if (line > LINES || colum > COLS)
 		return;
 	ucg_SetColor(ucg, 0, 189, 32, 43);
 	// draw frame
@@ -372,7 +338,7 @@ void frame(ucg_t *ucg, int line, int colum)
 
 void title(ucg_t *ucg, char text[], int line, int colum)
 {
-	if (line < LINES || colum < COLS)
+	if (line > LINES || colum > COLS)
 		return;
 	ucg_SetColor(ucg, 0, 189, 32, 43);
 	// change font
@@ -394,7 +360,7 @@ void title(ucg_t *ucg, char text[], int line, int colum)
 
 void variable(ucg_t *ucg, char text[], int line, int colum)
 {
-	if (line < LINES || colum < COLS)
+	if (line > LINES || colum > COLS)
 		return;
 	//clear area
 	clearVar(ucg, line, colum);
@@ -410,7 +376,7 @@ void variable(ucg_t *ucg, char text[], int line, int colum)
 
 void clearVar(ucg_t *ucg, int line, int colum)
 {
-	if (line < LINES || colum < COLS)
+	if (line > LINES || colum > COLS)
 		return;
 	ucg_SetColor(ucg, 0, 0, 0, 0);
 	ucg_DrawBox(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (VAR_TEXT_POSITION_H - VAR_TEXT_HIGHT), VAR_TEXT_LENGTH_MAX, (VAR_TEXT_HIGHT + VAR_TEXT_PLUS));
