@@ -105,6 +105,7 @@ int main(void)
 {
 	static showText_t showDown[28];
 	ucg_t ucg;
+	uint8_t localPage = curr_page;
 
 	init_disp(&ucg);
 	init_pins(&ucg);
@@ -134,11 +135,15 @@ int main(void)
 	addParam(&showDown[22], "fgf", "678");
 	addParam(&showDown[23], "izih", "44664");
 	puts("Starting Pages");
-	changePage(&ucg, 0);
+
+	changePage(&ucg, localPage);
 	while (1)
 	{
-		/* sleep a little */
-		xtimer_sleep(1);
+		if (localPage != curr_page)
+		{
+			localPage = curr_page;
+			changePage(&ucg, localPage);
+		}
 	}
 	return 0;
 }
@@ -150,25 +155,19 @@ void init_pins(ucg_t *ucg)
 }
 void pin_up_handler(void *arg)
 {
-	ucg_t *lucg = arg;
-
 	puts("Interrupt Up");
 	if (curr_page == max_page)
 		return;
 	curr_page += 1;
 	printf("%d \n", curr_page);
-	changePage(lucg, curr_page);
 }
 void pin_down_handler(void *arg)
 {
-	ucg_t *lucg = arg;
-
 	puts("Interrupt Down");
 	if (curr_page == 0)
 		return;
 	curr_page -= 1;
 	printf("%d \n", curr_page);
-	changePage(lucg, curr_page); // aus Interrupt nehmen, wegen rechenzeit
 }
 // funktion um die Struktur richtig zu fuellen.
 void addParam(showText_t *space, char title[], char variable[])
