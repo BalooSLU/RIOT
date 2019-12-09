@@ -23,5 +23,6 @@ QUIET ?= 1
 FEATURES_REQUIRED += periph_gpio periph_spi
 USEPKG += ucglib 
 USEMODULE += xtimer
+USEMODULE += periph_gpio_irq
 
 include $(RIOTBASE)/Makefile.include

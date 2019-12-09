@@ -41,6 +41,17 @@ _sketches.cpp
 
 # local override files
 Makefile.local
+*/boards
+*/bootloaders
+*/core
+*/cpu
+*/dist
+*/doc
+*/drivers
+*/examples
+*/pkg
+*/sys
+*/tests
 
 # Vagrant
 .vagrant
