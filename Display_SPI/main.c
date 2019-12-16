@@ -33,54 +33,53 @@ int main(void)
 {
 	static showText_t showDown[28];
 	ucg_t ucg;
-	uint8_t localPage = get_currPage();
+	uint8_t localPage = disp_get_currPage();
 
-	init_disp(&ucg);
-	init_buttons(&ucg);
+	disp_init(&ucg);
+	disp_init_buttons(&ucg);
 
-	addParam(&showDown[0], TEXT_UL, "1234567889");
-	addParam(&showDown[1], TEXT_UR, "2");
-	addParam(&showDown[2], TEXT_DL, "3");
-	addParam(&showDown[3], TEXT_DR, "4");
-	addParam(&showDown[4], "NextSite", "5");
-	addParam(&showDown[5], "FullSide", "9");
-	addParam(&showDown[6], "FullSide", "2");
-	addParam(&showDown[7], "qw", "3");
-	addParam(&showDown[8], "FullSide", "123");
-	addParam(&showDown[9], "q", "4467");
-	addParam(&showDown[10], "FullSide", "33222");
-	addParam(&showDown[11], "re", "12356");
-	addParam(&showDown[12], "FulldfSide", "433445");
-	addParam(&showDown[13], "vx", "2234567");
-	addParam(&showDown[14], "kglr", "89777");
-	addParam(&showDown[15], "zziioosa", "5544");
-	addParam(&showDown[16], "ffddss", "3456");
-	addParam(&showDown[17], "sdccvbbb", "78866");
-	addParam(&showDown[18], "sdfkfgrr", "33558");
-	addParam(&showDown[19], "dfgksdkfr", "2221");
-	addParam(&showDown[20], "daeglfkg", "2");
-	addParam(&showDown[21], "ddc", "345");
-	addParam(&showDown[22], "fgf", "678");
-	addParam(&showDown[23], "izih", "44664");
-	addParam(&showDown[24], "isaih", "4123664");
-	addParam(&showDown[25], "iasfzih", "44123664");
+	disp_addParam(&showDown[0], TEXT_UL, "1234567889");
+	disp_addParam(&showDown[1], TEXT_UR, "2");
+	disp_addParam(&showDown[2], TEXT_DL, "3");
+	disp_addParam(&showDown[3], TEXT_DR, "4");
+	disp_addParam(&showDown[4], "NextSite", "5");
+	disp_addParam(&showDown[5], "FullSide", "9");
+	disp_addParam(&showDown[6], "FullSide", "2");
+	disp_addParam(&showDown[7], "qw", "3");
+	disp_addParam(&showDown[8], "FullSide", "123");
+	disp_addParam(&showDown[9], "q", "4467");
+	disp_addParam(&showDown[10], "FullSide", "33222");
+	disp_addParam(&showDown[11], "re", "12356");
+	disp_addParam(&showDown[12], "FulldfSide", "433445");
+	disp_addParam(&showDown[13], "vx", "2234567");
+	disp_addParam(&showDown[14], "kglr", "89777");
+	disp_addParam(&showDown[15], "zziioosa", "5544");
+	disp_addParam(&showDown[16], "ffddss", "3456");
+	disp_addParam(&showDown[17], "sdccvbbb", "78866");
+	disp_addParam(&showDown[18], "sdfkfgrr", "33558");
+	disp_addParam(&showDown[19], "dfgksdkfr", "2221");
+	disp_addParam(&showDown[20], "daeglfkg", "2");
+	disp_addParam(&showDown[21], "ddc", "345");
+	disp_addParam(&showDown[22], "fgf", "678");
+	disp_addParam(&showDown[23], "izih", "44664");
+	disp_addParam(&showDown[24], "isaih", "4123664");
+	disp_addParam(&showDown[25], "iasfzih", "44123664");
 
 	puts("Starting Pages");
 	int test = 0;
-	changePage(&ucg, localPage);
+	disp_changePage(&ucg, localPage);
 	while (1)
 	{
-		if (localPage != get_currPage())
+		if (localPage != disp_get_currPage())
 		{
-			localPage = get_currPage();
-			changePage(&ucg, localPage);
-
-			char text[40];
-			sprintf(text, "Upd:%d", test);
-			changeVar(&ucg, &showDown[1], text);
-			test %= 100;
-			test++;
+			localPage = disp_get_currPage();
+			disp_changePage(&ucg, localPage);
 		}
+		char text[40];
+		sprintf(text, "Upd:%d", test);
+		disp_changeVar(&ucg, &showDown[0], text);
+		test %= 100;
+		test++;
 	}
 	return 0;
 }

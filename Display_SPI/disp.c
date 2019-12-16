@@ -27,11 +27,11 @@ static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_CD) +
                                 (1 << UCG_PIN_RST));
 // Variablen-Inhalt aendern
-void changeVar(ucg_t *ucg, showText_t *space, char *new_var)
+void disp_changeVar(ucg_t *ucg, showText_t *space, char *new_var)
 {
     strcpy(space->variable, new_var);
     //refreshing the current page after updating variables
-    if (get_currPage() == get_myPage(space->position))
+    if (disp_get_currPage() == disp_get_myPage(space->position))
     {
         disp_refresh(ucg);
     }
@@ -39,15 +39,15 @@ void changeVar(ucg_t *ucg, showText_t *space, char *new_var)
 // Aktualisieren der Seite
 void disp_refresh(ucg_t *ucg)
 {
-    drawIt(ucg, curr_page, MODE_VARIABLE);
+    disp_drawIt(ucg, curr_page, MODE_VARIABLE);
 }
 // Gibt die aktuelle Seite zurueck
-uint8_t get_currPage(void)
+uint8_t disp_get_currPage(void)
 {
     return curr_page;
 }
 // Gibt die Seite die zu der Position gehoert zurueck
-uint8_t get_myPage(uint8_t position)
+uint8_t disp_get_myPage(uint8_t position)
 {
     if (position >= QBOXES) // Parameter passt nicht auf Seite null
     {
@@ -59,21 +59,21 @@ uint8_t get_myPage(uint8_t position)
     }
 }
 // Eine Seite vor Handler
-void pin_up_handler(void *arg)
+void disp_pin_up_handler(void *arg)
 {
     if (curr_page == max_page)
         return;
     curr_page += 1;
 }
 // Eine Seite zurueck Handler
-void pin_down_handler(void *arg)
+void disp_pin_down_handler(void *arg)
 {
     if (curr_page == 0)
         return;
     curr_page -= 1;
 }
 // funktion um die Struktur richtig zu fuellen.
-void addParam(showText_t *space, char title[], char variable[])
+void disp_addParam(showText_t *space, char title[], char variable[])
 {
     showText_t *current = &head;
 
@@ -90,22 +90,22 @@ void addParam(showText_t *space, char title[], char variable[])
     strcpy(space->variable, variable);
     space->position = nr;
 
-    max_page = get_myPage(nr);
+    max_page = disp_get_myPage(nr);
     nr++;
 }
 // funktion um die Seite zu wechseln
-void changePage(ucg_t *ucg, uint8_t page)
+void disp_changePage(ucg_t *ucg, uint8_t page)
 {
     if (page <= max_page)
     {
         ucg_ClearScreen(ucg);
-        drawFrames(ucg, page);
-        drawIt(ucg, page, MODE_TITLE);
-        drawIt(ucg, page, MODE_VARIABLE);
+        disp_drawFrames(ucg, page);
+        disp_drawIt(ucg, page, MODE_TITLE);
+        disp_drawIt(ucg, page, MODE_VARIABLE);
     }
 }
 // initialisiert das Display
-void init_disp(ucg_t *ucg)
+void disp_init(ucg_t *ucg)
 {
     ucg_SetPins(ucg, pins, pins_enabled);
     ucg_SetDevice(ucg, SPI_DEV(0));
@@ -120,13 +120,13 @@ void init_disp(ucg_t *ucg)
     ucg_SetFontPosBaseline(ucg);
 }
 // initialisiert die Knoepfe
-void init_buttons(ucg_t *ucg)
+void disp_init_buttons(ucg_t *ucg)
 {
-    gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, pin_up_handler, ucg);
-    gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, pin_down_handler, ucg);
+    gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, disp_pin_up_handler, ucg);
+    gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, disp_pin_down_handler, ucg);
 }
 
-void drawFrames(ucg_t *ucg, uint8_t inputpage)
+void disp_drawFrames(ucg_t *ucg, uint8_t inputpage)
 {
     uint8_t l = 0;
     uint8_t c = 0;
@@ -141,7 +141,7 @@ void drawFrames(ucg_t *ucg, uint8_t inputpage)
         {
             for (c = 0; c < COLS; c++)
             {
-                frame(ucg, l, c);
+                disp_frame(ucg, l, c);
             }
         }
     }
@@ -152,12 +152,12 @@ void drawFrames(ucg_t *ucg, uint8_t inputpage)
         {
             l = (uint8_t)(p / COLS);
             c = (uint8_t)(p % COLS);
-            frame(ucg, l, c);
+            disp_frame(ucg, l, c);
         }
     }
 }
 
-void drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
+void disp_drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
 {
     showText_t *current = head.next; // start hier
     uint8_t l = 0;
@@ -183,10 +183,10 @@ void drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
                 switch (mode)
                 {
                 case MODE_TITLE:
-                    title(ucg, current->title, l, c);
+                    disp_title(ucg, current->title, l, c);
                     break;
                 case MODE_VARIABLE:
-                    variable(ucg, current->variable, l, c);
+                    disp_variable(ucg, current->variable, l, c);
                     break;
                 default:
                     return;
@@ -206,10 +206,10 @@ void drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
             switch (mode)
             {
             case MODE_TITLE:
-                title(ucg, current->title, l, c);
+                disp_title(ucg, current->title, l, c);
                 break;
             case MODE_VARIABLE:
-                variable(ucg, current->variable, l, c);
+                disp_variable(ucg, current->variable, l, c);
                 break;
             default:
                 return;
@@ -219,7 +219,7 @@ void drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
     }
 }
 
-void frame(ucg_t *ucg, int line, int colum)
+void disp_frame(ucg_t *ucg, int line, int colum)
 {
     if (line > LINES || colum > COLS)
         return;
@@ -235,7 +235,7 @@ void frame(ucg_t *ucg, int line, int colum)
 			*	--------------------
 			*/
 
-void title(ucg_t *ucg, char text[], int line, int colum)
+void disp_title(ucg_t *ucg, char text[], int line, int colum)
 {
     if (line > LINES || colum > COLS)
         return;
@@ -244,28 +244,28 @@ void title(ucg_t *ucg, char text[], int line, int colum)
     ucg_SetFont(ucg, TITLE_FONT);
     // test text
     char checked_text[] = " ";
-    check_text(ucg, text, checked_text, MODE_TITLE);
+    disp_check_text(ucg, text, checked_text, MODE_TITLE);
     // draw text
     ucg_DrawString(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (TITLE_TEXT_HIGHT + TEXT_OFFSET_H), 0, checked_text);
 }
 
-void variable(ucg_t *ucg, char text[], int line, int colum)
+void disp_variable(ucg_t *ucg, char text[], int line, int colum)
 {
     if (line > LINES || colum > COLS)
         return;
     //clear area
-    clearVar(ucg, line, colum);
+    disp_clearVar(ucg, line, colum);
     // change Color
     ucg_SetColor(ucg, 0, 63, 167, 136);
     // change font
     ucg_SetFont(ucg, VAR_FONT);
     // test text
     char checked_text[] = " ";
-    check_text(ucg, text, checked_text, MODE_VARIABLE);
+    disp_check_text(ucg, text, checked_text, MODE_VARIABLE);
     ucg_DrawString(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + VAR_TEXT_POSITION_H, 0, checked_text);
 }
 
-void clearVar(ucg_t *ucg, int line, int colum)
+void disp_clearVar(ucg_t *ucg, int line, int colum)
 {
     if (line > LINES || colum > COLS)
         return;
@@ -273,7 +273,7 @@ void clearVar(ucg_t *ucg, int line, int colum)
     ucg_DrawBox(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (VAR_TEXT_POSITION_H - VAR_TEXT_HIGHT), VAR_TEXT_LENGTH_MAX, (VAR_TEXT_HIGHT + VAR_TEXT_PLUS));
 }
 
-void check_text(ucg_t *ucg, char *quelle, char *ziel, char mode)
+void disp_check_text(ucg_t *ucg, char *quelle, char *ziel, char mode)
 {
     char out[16];                    // ausgabe string
     int str_length = strlen(quelle); // string laenge
