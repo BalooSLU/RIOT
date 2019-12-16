@@ -1,9 +1,9 @@
 #include "disp.h"
 
-volatile uint8_t curr_page = 0; // Aktuelle Seite die angezeigt wird
-static showText_t head;         // Start der linked liste
-volatile uint8_t nr = 0;        // letzter Eintrag in die Struktur
-volatile uint8_t max_page = 0;  // maximale Seitenanzahl
+uint8_t curr_page = 0;  // Aktuelle Seite die angezeigt wird
+static showText_t head; // Start der linked liste
+uint8_t nr = 0;         // letzter Eintrag in die Struktur
+uint8_t max_page = 0;   // maximale Seitenanzahl
 static gpio_t pins[] = {
     [UCG_PIN_CS] = GPIO5,  // Chip select
     [UCG_PIN_CD] = GPIO14, // Command/Data or A0
@@ -61,17 +61,32 @@ uint8_t disp_get_myPage(uint8_t position)
 // Eine Seite vor Handler
 void disp_pin_up_handler(void *arg)
 {
+    kernel_pid_t *pid = (kernel_pid_t *)arg;
+    msg_t msg;
+
     if (curr_page == max_page)
         return;
-    curr_page += 1;
+    msg.content.value = 1;
+    if (msg_try_send(&msg, *pid) == 0)
+    {
+        printf("Receiver queue full.\n");
+    }
 }
 // Eine Seite zurueck Handler
 void disp_pin_down_handler(void *arg)
 {
+    kernel_pid_t *pid = (kernel_pid_t *)arg;
+    msg_t msg;
+
     if (curr_page == 0)
         return;
-    curr_page -= 1;
+    msg.content.value = 0;
+    if (msg_try_send(&msg, *pid) == 0)
+    {
+        printf("Receiver queue full.\n");
+    }
 }
+
 // funktion um die Struktur richtig zu fuellen.
 void disp_addParam(showText_t *space, char title[], char variable[])
 {
@@ -120,10 +135,10 @@ void disp_init(ucg_t *ucg)
     ucg_SetFontPosBaseline(ucg);
 }
 // initialisiert die Knoepfe
-void disp_init_buttons(ucg_t *ucg)
+void disp_init_buttons(ucg_t *ucg, kernel_pid_t *disp_pid)
 {
-    gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, disp_pin_up_handler, ucg);
-    gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, disp_pin_down_handler, ucg);
+    gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, disp_pin_up_handler, disp_pid);
+    gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, disp_pin_down_handler, disp_pid);
 }
 
 void disp_drawFrames(ucg_t *ucg, uint8_t inputpage)

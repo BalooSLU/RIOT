@@ -20,8 +20,7 @@
 #include <string.h>
 #include "disp.h"
 #include "thread.h"
-#include "xtimer.h"
-#include "logo.h"
+#include "msg.h"
 
 // Text Beispiele:
 #define TEXT_UL "Temperatur:" //text left up
@@ -29,14 +28,19 @@
 #define TEXT_DL "Time:"		  //text left down
 #define TEXT_DR "State:"	  //text right down
 
-int main(void)
+#define DISP_QUEUE_SIZE (8)
+extern uint8_t curr_page;
+static showText_t showDown[28];
+static kernel_pid_t disp_pid;
+static char disp_stack[THREAD_STACKSIZE_DEFAULT + THREAD_EXTRA_STACKSIZE_PRINTF];
+static msg_t disp_queue[DISP_QUEUE_SIZE];
+static void *disp_thread(void *arg)
 {
-	static showText_t showDown[28];
-	ucg_t ucg;
-	uint8_t localPage = disp_get_currPage();
+	msg_t msg;
+	ucg_t *ucg = (ucg_t *)arg;
 
-	disp_init(&ucg);
-	disp_init_buttons(&ucg);
+	disp_init(ucg);
+	disp_init_buttons(ucg, &disp_pid);
 
 	disp_addParam(&showDown[0], TEXT_UL, "1234567889");
 	disp_addParam(&showDown[1], TEXT_UR, "2");
@@ -66,20 +70,31 @@ int main(void)
 	disp_addParam(&showDown[25], "iasfzih", "44123664");
 
 	puts("Starting Pages");
-	int test = 0;
-	disp_changePage(&ucg, localPage);
+
+	disp_changePage(ucg, 0);
+	msg_init_queue(disp_queue, DISP_QUEUE_SIZE);
 	while (1)
 	{
-		if (localPage != disp_get_currPage())
+		msg_receive(&msg);
+		if (msg.content.value == 0)
 		{
-			localPage = disp_get_currPage();
-			disp_changePage(&ucg, localPage);
+			curr_page -= 1;
 		}
-		char text[40];
-		sprintf(text, "Upd:%d", test);
-		disp_changeVar(&ucg, &showDown[0], text);
-		test %= 100;
-		test++;
+		else if (msg.content.value == 1)
+		{
+			curr_page += 1;
+		}
+		disp_changePage(ucg, curr_page);
+	}
+	return NULL;
+}
+int main(void)
+{
+	ucg_t ucg;
+	disp_pid = thread_create(disp_stack, sizeof(disp_stack),
+							 THREAD_PRIORITY_MAIN - 1, 0, disp_thread, &ucg, "disp");
+	while (1)
+	{
 	}
 	return 0;
 }
