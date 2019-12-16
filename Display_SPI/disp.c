@@ -1,16 +1,16 @@
 #include "disp.h"
 
-volatile uint8_t curr_page = 0;
-static showText_t head;
-volatile uint8_t nr = 0;       // letzter Eintrag in die Struktur
-volatile uint8_t max_page = 0; // maximale Seitenanzahl
+volatile uint8_t curr_page = 0; // Aktuelle Seite die angezeigt wird
+static showText_t head;         // Start der Linked liste
+volatile uint8_t nr = 0;        // letzter Eintrag in die Struktur
+volatile uint8_t max_page = 0;  // maximale Seitenanzahl
 static gpio_t pins[] = {
     [UCG_PIN_CS] = GPIO5,  // Chip select
     [UCG_PIN_CD] = GPIO14, // Command/Data or A0
     [UCG_PIN_RST] = GPIO2  // Reset pin
 };
 // Pin out for ESP-WROOM-32
-/* 	Diplay 	-	MCU
+/*          	Diplay 	-	MCU
 			*-----------------------------
 			*	LED	-	3V3
 			*  	SCK	-	D18
@@ -24,22 +24,19 @@ static gpio_t pins[] = {
 static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_CD) +
                                 (1 << UCG_PIN_RST));
+// Gibt die aktuelle Seite zurück
 uint8_t get_currPage(void)
 {
     return curr_page;
 }
-
-void init_buttons(ucg_t *ucg)
-{
-    gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, pin_up_handler, ucg);
-    gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, pin_down_handler, ucg);
-}
+// Eine Seite vor Handler
 void pin_up_handler(void *arg)
 {
     if (curr_page == max_page)
         return;
     curr_page += 1;
 }
+// Eine Seite zurueck Handler
 void pin_down_handler(void *arg)
 {
     if (curr_page == 0)
@@ -73,6 +70,38 @@ void addParam(showText_t *space, char title[], char variable[])
         max_page = 0;
     }
     nr++;
+}
+// funktion um die Seite zu wechseln
+void changePage(ucg_t *ucg, uint8_t page)
+{
+    if (page <= max_page)
+    {
+        ucg_ClearScreen(ucg);
+        drawFrames(ucg, page);
+        drawIt(ucg, page, MODE_TITLE);
+        drawIt(ucg, page, MODE_VARIABLE);
+    }
+}
+// initialisiert das Display
+void init_disp(ucg_t *ucg)
+{
+    ucg_SetPins(ucg, pins, pins_enabled);
+    ucg_SetDevice(ucg, SPI_DEV(0));
+
+    ucg_Init(ucg, ucg_dev_st7735_18x128x160, ucg_ext_st7735_18, ucg_com_riotos_hw_spi);
+
+    /* initialize the display */
+    puts("Initializing display.");
+    ucg_SetFontMode(ucg, UCG_FONT_MODE_TRANSPARENT);
+
+    ucg_ClearScreen(ucg);
+    ucg_SetFontPosBaseline(ucg);
+}
+// initialisiert die Knöpfe
+void init_buttons(ucg_t *ucg)
+{
+    gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, pin_up_handler, ucg);
+    gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, pin_down_handler, ucg);
 }
 
 void drawFrames(ucg_t *ucg, uint8_t inputpage)
@@ -168,32 +197,6 @@ void drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
             current = current->next; // iterating over the list
         }
     }
-}
-
-void changePage(ucg_t *ucg, uint8_t page)
-{
-    if (page <= max_page)
-    {
-        ucg_ClearScreen(ucg);
-        drawFrames(ucg, page);
-        drawIt(ucg, page, MODE_TITLE);
-        drawIt(ucg, page, MODE_VARIABLE);
-    }
-}
-
-void init_disp(ucg_t *ucg)
-{
-    ucg_SetPins(ucg, pins, pins_enabled);
-    ucg_SetDevice(ucg, SPI_DEV(0));
-
-    ucg_Init(ucg, ucg_dev_st7735_18x128x160, ucg_ext_st7735_18, ucg_com_riotos_hw_spi);
-
-    /* initialize the display */
-    puts("Initializing display.");
-    ucg_SetFontMode(ucg, UCG_FONT_MODE_TRANSPARENT);
-
-    ucg_ClearScreen(ucg);
-    ucg_SetFontPosBaseline(ucg);
 }
 
 void frame(ucg_t *ucg, int line, int colum)
