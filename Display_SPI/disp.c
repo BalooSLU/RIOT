@@ -1,7 +1,7 @@
 #include "disp.h"
 
 volatile uint8_t curr_page = 0; // Aktuelle Seite die angezeigt wird
-static showText_t head;         // Start der Linked liste
+static showText_t head;         // Start der linked liste
 volatile uint8_t nr = 0;        // letzter Eintrag in die Struktur
 volatile uint8_t max_page = 0;  // maximale Seitenanzahl
 static gpio_t pins[] = {
@@ -26,15 +26,37 @@ static gpio_t pins[] = {
 static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_CD) +
                                 (1 << UCG_PIN_RST));
+// Variablen-Inhalt aendern
+void changeVar(ucg_t *ucg, showText_t *space, char *new_var)
+{
+    strcpy(space->variable, new_var);
+    //refreshing the current page after updating variables
+    if (get_currPage() == get_myPage(space->position))
+    {
+        disp_refresh(ucg);
+    }
+}
 // Aktualisieren der Seite
 void disp_refresh(ucg_t *ucg)
 {
     drawIt(ucg, curr_page, MODE_VARIABLE);
 }
-// Gibt die aktuelle Seite zurück
+// Gibt die aktuelle Seite zurueck
 uint8_t get_currPage(void)
 {
     return curr_page;
+}
+// Gibt die Seite die zu der Position gehoert zurueck
+uint8_t get_myPage(uint8_t position)
+{
+    if (position >= QBOXES) // Parameter passt nicht auf Seite null
+    {
+        return (uint8_t)(position / QBOXES);
+    }
+    else // Parameter passt auf Seite null
+    {
+        return 0;
+    }
 }
 // Eine Seite vor Handler
 void pin_up_handler(void *arg)
@@ -64,18 +86,11 @@ void addParam(showText_t *space, char title[], char variable[])
 
     current->next = space; // fuegt neue structur zum ende der liste
 
-    // ** Leerzeichen muessen abgefangen werden
     strcpy(space->title, title);
     strcpy(space->variable, variable);
+    space->position = nr;
 
-    if (nr >= QBOXES) // Parameter passt nicht auf Seite null
-    {
-        max_page = (uint8_t)(nr / QBOXES);
-    }
-    else // Parameter passt auf Seite null
-    {
-        max_page = 0;
-    }
+    max_page = get_myPage(nr);
     nr++;
 }
 // funktion um die Seite zu wechseln
@@ -104,7 +119,7 @@ void init_disp(ucg_t *ucg)
     ucg_ClearScreen(ucg);
     ucg_SetFontPosBaseline(ucg);
 }
-// initialisiert die Knöpfe
+// initialisiert die Knoepfe
 void init_buttons(ucg_t *ucg)
 {
     gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, pin_up_handler, ucg);
@@ -212,7 +227,7 @@ void frame(ucg_t *ucg, int line, int colum)
     // draw frame
     ucg_DrawRFrame(ucg, colum * FRAME_WIDTH, line * FRAME_HIGHT, FRAME_WIDTH, FRAME_HIGHT, FRAME_EGDE_RADIUS);
 }
-// Text Position example
+// Title/Variable Position example
 /*      --------------------
 			*  	- 0.0	-	0.1-
 			*	--------------------
@@ -233,14 +248,6 @@ void title(ucg_t *ucg, char text[], int line, int colum)
     // draw text
     ucg_DrawString(ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (TITLE_TEXT_HIGHT + TEXT_OFFSET_H), 0, checked_text);
 }
-
-// Variable Position example
-/*      --------------------
-			*  	- 0.0	-	0.1-
-			*	--------------------
-			*  	- 1.0	-	1.1-
-			*	--------------------
-			*/
 
 void variable(ucg_t *ucg, char text[], int line, int colum)
 {

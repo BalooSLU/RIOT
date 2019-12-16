@@ -66,7 +66,7 @@ int main(void)
 	addParam(&showDown[25], "iasfzih", "44123664");
 
 	puts("Starting Pages");
-
+	int test = 0;
 	changePage(&ucg, localPage);
 	while (1)
 	{
@@ -74,6 +74,12 @@ int main(void)
 		{
 			localPage = get_currPage();
 			changePage(&ucg, localPage);
+
+			char text[40];
+			sprintf(text, "Upd:%d", test);
+			changeVar(&ucg, &showDown[1], text);
+			test %= 100;
+			test++;
 		}
 	}
 	return 0;

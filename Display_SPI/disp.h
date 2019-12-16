@@ -36,7 +36,7 @@ typedef struct showText
 {
     char title[50];
     char variable[50];
-    int position;
+    uint8_t position;
     struct showText *next;
 } showText_t;
 
@@ -46,6 +46,8 @@ void init_disp(ucg_t *ucg);
 void init_buttons(ucg_t *ucg);
 void changePage(ucg_t *ucg, uint8_t page);
 uint8_t get_currPage(void);
+uint8_t get_myPage(uint8_t position);
+void changeVar(ucg_t *ucg, showText_t *space, char *new_var);
 void addParam(showText_t *space, char title[], char variable[]);
 // 2. Layer
 void pin_up_handler(void *arg);
