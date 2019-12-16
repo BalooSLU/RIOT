@@ -20,10 +20,17 @@ static gpio_t pins[] = {
 			*  	CS	-	D5
 			*  	GND	-	GND
 			*  	VCC	-	VIN
+            * Up_Botton - D22
+            * Down_Bott - D21
 			*/
 static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_CD) +
                                 (1 << UCG_PIN_RST));
+// Aktualisieren der Seite
+void disp_refresh(ucg_t *ucg)
+{
+    drawIt(ucg, curr_page, MODE_VARIABLE);
+}
 // Gibt die aktuelle Seite zurück
 uint8_t get_currPage(void)
 {
@@ -154,7 +161,6 @@ void drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
     }
     if (inputpage < max_page) // full Page
     {
-        puts("Full Page");
         for (l = 0; l < LINES; l++)
         {
             for (c = 0; c < COLS; c++)
@@ -176,7 +182,6 @@ void drawIt(ucg_t *ucg, uint8_t inputpage, char mode)
     }
     else if (inputpage == max_page) // teil Page
     {
-        puts("Teils Page");
         uint8_t position = (uint8_t)((nr - 1) % QBOXES); // nr == max position
         for (int p = 0; p <= position; p++)
         {

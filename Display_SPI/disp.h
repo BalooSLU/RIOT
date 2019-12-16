@@ -41,12 +41,12 @@ typedef struct showText
 } showText_t;
 
 // User Layer
+void disp_refresh(ucg_t *ucg);
 void init_disp(ucg_t *ucg);
 void init_buttons(ucg_t *ucg);
 void changePage(ucg_t *ucg, uint8_t page);
 uint8_t get_currPage(void);
 void addParam(showText_t *space, char title[], char variable[]);
-void refresh_disp(void);
 // 2. Layer
 void pin_up_handler(void *arg);
 void pin_down_handler(void *arg);
