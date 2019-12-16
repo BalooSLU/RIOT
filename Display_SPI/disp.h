@@ -40,19 +40,23 @@ typedef struct showText
     struct showText *next;
 } showText_t;
 
-void drawIt(ucg_t *ucg, uint8_t inputpage, char mode);
-void drawFrames(ucg_t *ucg, uint8_t inputpage);
-void addParam(showText_t *space, char title[], char variable[]);
-void frame(ucg_t *ucg, int line, int colum);
-void title(ucg_t *ucg, char text[], int line, int colum);
-void variable(ucg_t *ucg, char text[], int line, int colum);
-void clearVar(ucg_t *ucg, int line, int colum);
-void check_text(ucg_t *ucg, char *quelle, char *ziel, char mode);
-void changePage(ucg_t *ucg, uint8_t page);
+// User Layer
 void init_disp(ucg_t *ucg);
 void init_buttons(ucg_t *ucg);
+void changePage(ucg_t *ucg, uint8_t page);
+uint8_t get_currPage(void);
+void addParam(showText_t *space);
+void refresh_disp(void);
+// 2. Layer
 void pin_up_handler(void *arg);
 void pin_down_handler(void *arg);
-uint8_t get_currPage(void);
+void drawIt(ucg_t *ucg, uint8_t inputpage, char mode);
+void drawFrames(ucg_t *ucg, uint8_t inputpage);
+// 1. Layer
+void check_text(ucg_t *ucg, char *quelle, char *ziel, char mode);
+void frame(ucg_t *ucg, int line, int colum);
+void title(ucg_t *ucg, char *text, int line, int colum);
+void variable(ucg_t *ucg, char *text, int line, int colum);
+void clearVar(ucg_t *ucg, int line, int colum);
 
 #endif
