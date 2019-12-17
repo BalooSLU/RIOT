@@ -42,6 +42,7 @@ typedef struct showText
 } showText_t;
 
 // User Layer
+void *disp_thread(void *arg);
 void disp_refresh(ucg_t *ucg);
 void disp_init(ucg_t *ucg);
 void disp_init_buttons(ucg_t *ucg, kernel_pid_t *disp_pid);

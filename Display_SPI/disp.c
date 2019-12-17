@@ -26,6 +26,72 @@ static gpio_t pins[] = {
 static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_CD) +
                                 (1 << UCG_PIN_RST));
+
+#define DISP_QUEUE_SIZE (8)
+// Text Beispiele:
+#define TEXT_UL "Temperatur:" //text left up
+#define TEXT_UR "Humitity:"   //text right up
+#define TEXT_DL "Time:"       //text left down
+#define TEXT_DR "State:"      //text right down
+
+static showText_t showDown[28];
+static msg_t disp_queue[DISP_QUEUE_SIZE];
+void *disp_thread(void *arg)
+{
+    ucg_t ucg;
+    msg_t msg;
+    kernel_pid_t *disp_pid = (kernel_pid_t *)arg;
+
+    disp_init(&ucg);
+    disp_init_buttons(&ucg, disp_pid);
+
+    disp_addParam(&showDown[0], TEXT_UL, "1234567889");
+    disp_addParam(&showDown[1], TEXT_UR, "2");
+    disp_addParam(&showDown[2], TEXT_DL, "3");
+    disp_addParam(&showDown[3], TEXT_DR, "4");
+    disp_addParam(&showDown[4], "NextSite", "5");
+    disp_addParam(&showDown[5], "FullSide", "9");
+    disp_addParam(&showDown[6], "FullSide", "2");
+    disp_addParam(&showDown[7], "qw", "3");
+    disp_addParam(&showDown[8], "FullSide", "123");
+    disp_addParam(&showDown[9], "q", "4467");
+    disp_addParam(&showDown[10], "FullSide", "33222");
+    disp_addParam(&showDown[11], "re", "12356");
+    disp_addParam(&showDown[12], "FulldfSide", "433445");
+    disp_addParam(&showDown[13], "vx", "2234567");
+    disp_addParam(&showDown[14], "kglr", "89777");
+    disp_addParam(&showDown[15], "zziioosa", "5544");
+    disp_addParam(&showDown[16], "ffddss", "3456");
+    disp_addParam(&showDown[17], "sdccvbbb", "78866");
+    disp_addParam(&showDown[18], "sdfkfgrr", "33558");
+    disp_addParam(&showDown[19], "dfgksdkfr", "2221");
+    disp_addParam(&showDown[20], "daeglfkg", "2");
+    disp_addParam(&showDown[21], "ddc", "345");
+    disp_addParam(&showDown[22], "fgf", "678");
+    disp_addParam(&showDown[23], "izih", "44664");
+    disp_addParam(&showDown[24], "isaih", "4123664");
+    disp_addParam(&showDown[25], "iasfzih", "44123664");
+
+    puts("Starting Pages");
+
+    disp_changePage(&ucg, 0);
+    msg_init_queue(disp_queue, DISP_QUEUE_SIZE);
+    while (1)
+    {
+        msg_receive(&msg);
+        if (msg.content.value == 0)
+        {
+            curr_page -= 1;
+        }
+        else if (msg.content.value == 1)
+        {
+            curr_page += 1;
+        }
+        disp_changePage(&ucg, curr_page);
+    }
+    return NULL;
+}
+
 // Variablen-Inhalt aendern
 void disp_changeVar(ucg_t *ucg, showText_t *space, char *new_var)
 {
