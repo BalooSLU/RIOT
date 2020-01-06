@@ -5,6 +5,8 @@
 #include <string.h>
 #include "periph/gpio.h"
 #include "periph/spi.h"
+#include "net/gcoap.h"
+#include "fmt.h"
 #include "ucg.h"
 #include "thread.h"
 
@@ -50,7 +52,11 @@ uint8_t disp_get_myPage(uint8_t position);
 void disp_changeVar(showText_t *space, char *new_var);
 void disp_deleteParam(showText_t *space);
 void disp_addParam(showText_t *space, char title[], char variable[]);
+ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, void *ctx);
 // 2. Layer
+showText_t *getnewspace(void);
+showText_t *getshowText(uint8_t posi);
+uint8_t getPosition(char *title);
 void disp_init(void);
 void disp_init_buttons(kernel_pid_t *disp_pid);
 void disp_pin_up_handler(void *arg);

@@ -24,5 +24,9 @@ FEATURES_REQUIRED += periph_gpio periph_spi
 USEPKG += ucglib 
 USEMODULE += xtimer
 USEMODULE += periph_gpio_irq
+USEMODULE += gcoap
 
+# Required by gcoap example
+USEMODULE += od
+USEMODULE += fmt
 include $(RIOTBASE)/Makefile.include

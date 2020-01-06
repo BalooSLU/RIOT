@@ -2,8 +2,9 @@
 
 uint8_t curr_page = 0;  // Aktuelle Seite die angezeigt wird
 static showText_t head; // Start der linked liste
-uint8_t nr = 0;         // letzter Eintrag in die Struktur
+uint8_t nr = 0;         // letzter Eintrag in die Struktur maximale Position
 uint8_t max_page = 0;   // maximale Seitenanzahl
+
 static gpio_t pins[] = {
     [UCG_PIN_CS] = GPIO5,  // Chip select
     [UCG_PIN_CD] = GPIO14, // Command/Data or A0
@@ -28,13 +29,11 @@ static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_RST));
 
 #define DISP_QUEUE_SIZE (8)
-// Text Beispiele:
-#define TEXT_UL "Temperatur:" //text left up
-#define TEXT_UR "Humitity:"   //text right up
-#define TEXT_DL "Time:"       //text left down
-#define TEXT_DR "State:"      //text right down
+#define SPEICHER 254 // anzahl speicher
+#define SEPERATOR ";"
 ucg_t ucg;
-static showText_t showDown[28]; // Fester Speicher
+
+static showText_t showDown[SPEICHER] = {{"", "", 255, NULL}}; // Fester Speicher
 static msg_t disp_queue[DISP_QUEUE_SIZE];
 void *disp_thread(void *arg)
 {
@@ -43,33 +42,6 @@ void *disp_thread(void *arg)
 
     disp_init();
     disp_init_buttons(disp_pid);
-
-    disp_addParam(&showDown[0], TEXT_UL, "1234567889");
-    disp_addParam(&showDown[1], TEXT_UR, "2");
-    disp_addParam(&showDown[2], TEXT_DL, "3");
-    disp_addParam(&showDown[3], TEXT_DR, "4");
-    disp_addParam(&showDown[4], "NextSite", "5");
-    disp_addParam(&showDown[5], "FullSide", "9");
-    disp_addParam(&showDown[6], "FullSide", "2");
-    disp_addParam(&showDown[7], "qw", "3");
-    disp_addParam(&showDown[8], "FullSide", "123");
-    disp_addParam(&showDown[9], "q", "4467");
-    disp_addParam(&showDown[10], "FullSide", "33222");
-    disp_addParam(&showDown[11], "re", "12356");
-    disp_addParam(&showDown[12], "FulldfSide", "433445");
-    disp_addParam(&showDown[13], "vx", "2234567");
-    disp_addParam(&showDown[14], "kglr", "89777");
-    disp_addParam(&showDown[15], "zziioosa", "5544");
-    disp_addParam(&showDown[16], "ffddss", "3456");
-    disp_addParam(&showDown[17], "sdccvbbb", "78866");
-    disp_addParam(&showDown[18], "sdfkfgrr", "33558");
-    disp_addParam(&showDown[19], "dfgksdkfr", "2221");
-    disp_addParam(&showDown[20], "daeglfkg", "2");
-    disp_addParam(&showDown[21], "ddc", "345");
-    disp_addParam(&showDown[22], "fgf", "678");
-    disp_addParam(&showDown[23], "izih", "44664");
-    disp_addParam(&showDown[24], "isaih", "4123664");
-    disp_addParam(&showDown[25], "iasfzih", "44123664");
 
     puts("Starting Pages");
 
@@ -90,6 +62,104 @@ void *disp_thread(void *arg)
     }
     return NULL;
 }
+
+ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, void *ctx)
+{
+    (void)ctx;
+
+    unsigned method_flag = coap_method2flag(coap_get_code_detail(pdu));
+    char *title = NULL;
+    char *variable = NULL;
+    char delimiter[] = ";";
+    switch (method_flag)
+    {
+    case COAP_GET:
+        gcoap_resp_init(pdu, buf, len, COAP_CODE_CONTENT);
+        coap_opt_add_format(pdu, COAP_FORMAT_TEXT);
+        size_t resp_len = coap_opt_finish(pdu, COAP_OPT_FINISH_PAYLOAD);
+
+        strcpy(title, (char *)pdu->payload);
+        showText_t *resp = getshowText(getPosition(title));
+        resp_len += *resp->title;
+        resp_len += *resp->variable;
+        return resp_len;
+    case COAP_PUT: //aktualisieren
+                   /* update the internal variable based on the title*/
+        strcpy(variable, (char *)pdu->payload);
+        title = strtok(variable, delimiter);
+        if (getPosition(title) != SPEICHER + 1)
+        {
+            disp_changeVar(getshowText(getPosition(title)), (char *)pdu->payload);
+            return gcoap_response(pdu, buf, len, COAP_CODE_CHANGED);
+        }
+        else
+        {
+            return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
+        }
+        break;
+    case COAP_POST: //erzeugen
+        strcpy(variable, (char *)pdu->payload);
+        title = strtok(variable, delimiter);
+        showText_t *space = getnewspace();
+        if (space != NULL)
+        {
+            disp_addParam(space, title, variable);
+        }
+        break;
+    }
+
+    return 0;
+}
+// returns position from title
+uint8_t getPosition(char *title)
+{
+    showText_t *current = head.next;
+    while (strcmp((char *)current->title, title) != 0)
+    {
+        if (current->next == NULL)
+        {
+            puts("Error: getPosition() -> wrong title");
+            return SPEICHER + 1;
+        }
+        current = current->next;
+    }
+    return current->position;
+}
+// gibt speicher zurueck der noch frei ist
+showText_t *getnewspace(void)
+{
+    showText_t *current = &showDown[0];
+    int i = 0;
+    while (current->position != SPEICHER + 1) // wenn position 255 ist dann unbenutzt
+    {
+        i++;
+        if (i == SPEICHER)
+        {
+            puts("Error: getnewspace() -> No Space left");
+            return NULL;
+        }
+        current = &showDown[i];
+    }
+    return current;
+}
+// gibt den speicher zurueck der zu der aktuellen position gehoert
+showText_t *getshowText(uint8_t posi)
+{
+    showText_t *current = head.next;
+    int i = 0;
+    while (i < posi)
+    {
+        i++;
+        if (current->next == NULL)
+        {
+            puts("Error: getshowText() -> wrong position");
+            return NULL;
+        }
+        current = current->next;
+    }
+    return current;
+}
+
 // Parameter aus der liste Loeschen
 void disp_deleteParam(showText_t *space)
 {
@@ -118,6 +188,7 @@ void disp_deleteParam(showText_t *space)
     {
         current->next = NULL; // Parameter aus der liste loeschen
     }
+    space->position = SPEICHER + 1; // position with 255 is unvalid
     nr--;                           // loescht ein element aus der globalen Variable
     max_page = disp_get_myPage(nr); // aendert die maximale Seitenzahl
 }
