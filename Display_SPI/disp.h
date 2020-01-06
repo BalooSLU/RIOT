@@ -44,14 +44,15 @@ typedef struct showText
 // User Layer
 void *disp_thread(void *arg);
 void disp_refresh(void);
-void disp_init(void);
-void disp_init_buttons(kernel_pid_t *disp_pid);
 void disp_changePage(uint8_t page);
 uint8_t disp_get_currPage(void);
 uint8_t disp_get_myPage(uint8_t position);
 void disp_changeVar(showText_t *space, char *new_var);
+void disp_deleteParam(showText_t *space);
 void disp_addParam(showText_t *space, char title[], char variable[]);
 // 2. Layer
+void disp_init(void);
+void disp_init_buttons(kernel_pid_t *disp_pid);
 void disp_pin_up_handler(void *arg);
 void disp_pin_down_handler(void *arg);
 void disp_drawIt(uint8_t inputpage, char mode);

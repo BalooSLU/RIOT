@@ -90,6 +90,37 @@ void *disp_thread(void *arg)
     }
     return NULL;
 }
+// Parameter aus der liste Loeschen
+void disp_deleteParam(showText_t *space)
+{
+    showText_t *current = &head;
+
+    while (current->next != space) // iteriert durch die linked liste zum passenden eintrag
+    {
+        current = current->next;
+        if (current->next == NULL) // wenn "space" nicht vorhanden -> fehlermeldung
+        {
+            puts("Error: disp_deleteParam() -> Parameter does not exist.");
+            return;
+        }
+    }
+    if (space->next != NULL) // ende der liste ignorieren
+    {
+        current->next = space->next;  // Parameter aus der liste loeschen
+        space->next = NULL;           // loeschen der verbindung zur liste
+        while (current->next != NULL) // anpassen der positionen der restlichen parameter
+        {
+            current = current->next; // iteriert durch die liste
+            current->position -= 1;  // setzt die position um einen runter
+        }
+    }
+    else
+    {
+        current->next = NULL; // Parameter aus der liste loeschen
+    }
+    nr--;                           // loescht ein element aus der globalen Variable
+    max_page = disp_get_myPage(nr); // aendert die maximale Seitenzahl
+}
 
 // Variablen-Inhalt aendern
 void disp_changeVar(showText_t *space, char *new_var)
