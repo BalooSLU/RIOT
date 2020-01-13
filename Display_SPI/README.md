@@ -31,6 +31,98 @@ The most usefull customizable defines are:
 - The display size with DISP_WIDT/DISP_HIGHT  
 - The rows and columns number COLS/LINES  
 After changing the variable or title fonts the defines VAR_TEXT_HIGHT/TITLE_TEXT_HIGHT must be adjusted.  
+  
+1. Display and touch bottons initialisization
+```
+    disp_init();
+    disp_init_buttons(disp_pid);
+```
+2. predefine your space with position == 255 for showing free usage
+```
+    static showText_t showDown[SPEICHER]; // define static space
+    uint8_t i;
+    for (i = 0; i < SPEICHER; i++)
+    { // freier Speicherplatz wird mit Position 255 definiert
+        showDown[i].position = SPEICHER;
+    }
+```
+3. adding ficitious data for testing and presentaion
+```
+    
+    disp_addParam(&showDown[2], "Hight:", "15");
+    disp_addParam(&showDown[3], "Batt:", "82");
+    disp_addParam(&showDown[4], "State:", "save");
+```
+4. Showing up first page
+```
+    disp_changePage(0);
+```
+5. waiting for bottons to be pressed
+```
+        msg_receive(&msg);
+        if (msg.content.value == 0)
+        {
+            curr_page -= 1;
+        }
+        else if (msg.content.value == 1)
+        {
+            curr_page += 1;
+        }
+```
+5.1 and change diplay page
+```
+disp_changePage(curr_page);
+```
+6. delete a parameter if not longer needed
+```
+disp_deleteParam(&showDown[3]); 
+```
+6.1 deleting a parameter with only the title
+```
+uint8_t temp_pos = getPosition(title);
+        if (temp_pos != SPEICHER)
+        {
+            disp_deleteParam(getshowText(temp_pos));
+	}
+```
+7. updating a variable of a space 
+```
+disp_changeVar(&showDown[0], "newData");
+```
+7.1 updating variable with only the title
+```
+uint8_t temp_pos = getPosition(title);
+        if (temp_pos != SPEICHER)
+        {
+            disp_changeVar(getshowText(temp_pos), variable);
+	}
+```
+8 creating new space
+```
+showText_t *space = getnewspace();
+```
+8.1 creating space and adding to the list
+```
+if (title == NULL)
+            return -1;
+if (variable == NULL)
+            return -1;
+showText_t *space = getnewspace();
+if (space != NULL)
+	{
+            disp_addParam(space, title, variable);
+            return 0;
+        }
+```
+GCOAP
+=====
+The "title" is the identifier for the parameter, every dublicated parameter must be deleted manaully.  
+Gcoap handler used for:  
+
+* GET "title": returns the values based on the send title  
+* PUT "title;variable": update the internal variable based on the title  
+* POST "title;variable": addding/creating parameter with given title and variable  
+* DELETE "title": deletes the first up come of the parameter with the title "title"  
 
 Pinout
 ======
