@@ -35,36 +35,40 @@ ucg_t ucg;
 
 static showText_t showDown[SPEICHER]; // Fester Speicher
 static msg_t disp_queue[DISP_QUEUE_SIZE];
+//show case for usage of the display library
 void *disp_thread(void *arg)
 {
     msg_t msg;
     kernel_pid_t *disp_pid = (kernel_pid_t *)arg;
-
+    //1. Dispaly and Touch Bottons initialisization
     disp_init();
     disp_init_buttons(disp_pid);
-
+    //2. predefine your space with position == 255 for showing free usage
     uint8_t i;
     for (i = 0; i < SPEICHER; i++)
     { // freier Speicherplatz wird mit Position 255 definiert
         showDown[i].position = SPEICHER;
     }
-
+    //3. adding ficitious data for testing and presentaion
+    // data can be added unevenly
     disp_addParam(&showDown[0], "Humitity:", "18");
     disp_addParam(&showDown[1], "Temp:", "5");
     disp_addParam(&showDown[2], "Hight:", "15");
     disp_addParam(&showDown[3], "Batt:", "82");
     disp_addParam(&showDown[4], "State:", "save");
-    disp_addParam(&showDown[5], "People:", "15");
-    disp_addParam(&showDown[6], "Injuired:", "82");
+    disp_addParam(&showDown[5], "People:", "1200");
+    disp_addParam(&showDown[6], "Injuired:", "2");
     disp_addParam(&showDown[7], "Help:", "not");
     disp_addParam(&showDown[8], "Date:", "13Jan2020");
     disp_addParam(&showDown[9], "Time:", "-");
     disp_addParam(&showDown[10], "State:", "save");
     puts("Starting Pages");
+    //4. Show up first page
     disp_changePage(0);
     msg_init_queue(disp_queue, DISP_QUEUE_SIZE);
     while (1)
     {
+        //5. waiting for bottons to be pressed
         msg_receive(&msg);
         if (msg.content.value == 0)
         {
@@ -74,11 +78,18 @@ void *disp_thread(void *arg)
         {
             curr_page += 1;
         }
+        //5.1 and change diplay page
         disp_changePage(curr_page);
     }
     return NULL;
 }
-
+/* 
+* Gcoap handler used for: 
+* GET"title": returns the values based on the send title
+* PUT"title;variable": update the internal variable based on the title 
+* POST"title;variable": addding/creating parameter with given title and variable
+* DELETE"title": deletes the first up come of the parameter with the title "title"
+*/
 ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, void *ctx)
 {
     (void)ctx;
@@ -87,7 +98,7 @@ ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, v
     char *title;
     char *variable;
     char temp_pay[50] = "";
-    char delimiter[2] = ";";
+    char delimiter[2] = SEPERATOR; // the char that is used for sepetartion between title and variable
     uint8_t temp_pos = SPEICHER;
 
     switch (method_flag)
@@ -149,7 +160,7 @@ ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, v
             return gcoap_response(pdu, buf, len, COAP_CODE_VALID);
         }
         return gcoap_response(pdu, buf, len, COAP_CODE_NOT_ACCEPTABLE);
-    case COAP_DELETE:
+    case COAP_DELETE: //loeschen
         strcpy(temp_pay, (char *)pdu->payload);
         temp_pos = getPosition(temp_pay);
         if (temp_pos != SPEICHER)
@@ -163,7 +174,9 @@ ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, v
     }
     return 0;
 }
-// returns position from title
+/*
+* returns the first come up position with the title "title"
+*/
 uint8_t getPosition(char *title)
 {
     showText_t *current = head.next;
@@ -178,7 +191,9 @@ uint8_t getPosition(char *title)
     }
     return current->position;
 }
-// gibt speicher zurueck der noch frei ist
+/*
+* Searches for unused space and returns the adresse
+*/
 showText_t *getnewspace(void)
 {
     showText_t *current = &showDown[0];
@@ -195,7 +210,9 @@ showText_t *getnewspace(void)
     }
     return current;
 }
-// gibt den speicher zurueck der zu der aktuellen position gehoert
+/*
+* returns the space based on the position handled to this function
+*/
 showText_t *getshowText(uint8_t posi)
 {
     showText_t *current = head.next;
@@ -213,12 +230,15 @@ showText_t *getshowText(uint8_t posi)
     return current;
 }
 
-// Parameter aus der liste Loeschen
+/*
+* Deletes the link from the space to 
+* the linked list and connects the ends together 
+*/
 void disp_deleteParam(showText_t *space)
 {
-    showText_t *current = &head;
+    showText_t *current = &head; //Start der liste
 
-    while (current->next != space) // iteriert durch die linked liste zum passenden eintrag
+    while (current->next != space) // iteriert durch die linked liste zum passenden Eintrag
     {
         current = current->next;
         if (current->next == NULL) // wenn "space" nicht vorhanden -> fehlermeldung
@@ -246,7 +266,10 @@ void disp_deleteParam(showText_t *space)
     max_page = disp_get_myPage(nr); // aendert die maximale Seitenzahl
 }
 
-// Variablen-Inhalt aendern
+/*
+* Changes only the variable from a given space
+* refreshes page if changed variable is on the current page
+*/
 void disp_changeVar(showText_t *space, char *new_var)
 {
     strcpy(space->variable, new_var);
@@ -256,17 +279,24 @@ void disp_changeVar(showText_t *space, char *new_var)
         disp_refresh();
     }
 }
-// Aktualisieren der Seite
+/*
+* refereshes the current page
+*/
 void disp_refresh(void)
 {
     disp_drawIt(curr_page, MODE_VARIABLE);
 }
-// Gibt die aktuelle Seite zurueck
+/*
+* returns the current page number
+*/
 uint8_t disp_get_currPage(void)
 {
     return curr_page;
 }
-// Gibt die Seite die zu der Position gehoert zurueck
+/*
+* returns the page to the given position
+* frames per page change with the colls and lines selected
+*/
 uint8_t disp_get_myPage(uint8_t position)
 {
     if (position >= QBOXES) // Parameter passt nicht auf Seite null
@@ -278,7 +308,10 @@ uint8_t disp_get_myPage(uint8_t position)
         return 0;
     }
 }
-// Eine Seite vor Handler
+/*
+* Handler for going one page further
+* Gpio Interrupt hander triggered from one botton
+*/
 void disp_pin_up_handler(void *arg)
 {
     kernel_pid_t *pid = (kernel_pid_t *)arg;
@@ -292,7 +325,10 @@ void disp_pin_up_handler(void *arg)
         printf("Receiver queue full.\n");
     }
 }
-// Eine Seite zurueck Handler
+/*
+* Handler for going one page back
+* Gpio Interrupt hander triggered from one botton
+*/
 void disp_pin_down_handler(void *arg)
 {
     kernel_pid_t *pid = (kernel_pid_t *)arg;
@@ -306,8 +342,10 @@ void disp_pin_down_handler(void *arg)
         printf("Receiver queue full.\n");
     }
 }
-
-// funktion um die Struktur richtig zu fuellen.
+/*
+* function helps linking space to existing list
+* maxpage and nr musst be corrected for the working of the list
+*/
 void disp_addParam(showText_t *space, char title[], char variable[])
 {
     showText_t *current = &head;
@@ -316,7 +354,7 @@ void disp_addParam(showText_t *space, char title[], char variable[])
     {
         current = current->next;
     }
-    if (current == space) // stopen von schleifen
+    if (current == space) // stopen von im kreis laufen (schleifen)
         return;
 
     current->next = space; // fuegt neue structur zum ende der liste
@@ -328,7 +366,9 @@ void disp_addParam(showText_t *space, char title[], char variable[])
     max_page = disp_get_myPage(nr);
     nr++;
 }
-// funktion um die Seite zu wechseln
+/*
+* function to change pages 
+*/
 void disp_changePage(uint8_t page)
 {
     if (page <= max_page)
@@ -339,7 +379,10 @@ void disp_changePage(uint8_t page)
         disp_drawIt(page, MODE_VARIABLE);
     }
 }
-// initialisiert das Display
+/*
+* Initialize the display
+* and creat the ucg to show data for the display
+*/
 void disp_init(void)
 {
     ucg_SetPins(&ucg, pins, pins_enabled);
@@ -354,13 +397,20 @@ void disp_init(void)
     ucg_ClearScreen(&ucg);
     ucg_SetFontPosBaseline(&ucg);
 }
-// initialisiert die Knoepfe
+/*
+* initialize the pins for the bottons
+* so the pages can be changed  
+*/
 void disp_init_buttons(kernel_pid_t *disp_pid)
 {
     gpio_init_int(GPIO22, GPIO_IN_PD, GPIO_RISING, disp_pin_up_handler, disp_pid);
     gpio_init_int(GPIO21, GPIO_IN_PD, GPIO_RISING, disp_pin_down_handler, disp_pid);
 }
-
+/*
+* draws the frames based on the input page 
+* wheater this page have to be full or not completed
+* the amount of frames is calculated from number of paramters in the list
+*/
 void disp_drawFrames(uint8_t inputpage)
 {
     uint8_t l = 0;
@@ -391,7 +441,11 @@ void disp_drawFrames(uint8_t inputpage)
         }
     }
 }
-
+/*
+* draws the titles or variables based on the input page 
+* wheater this page have to be full or not completed
+* the amount of titles or variables is calculated from number of paramters in the list
+*/
 void disp_drawIt(uint8_t inputpage, char mode)
 {
     showText_t *current = head.next; // start hier
@@ -453,7 +507,9 @@ void disp_drawIt(uint8_t inputpage, char mode)
         }
     }
 }
-
+/*
+* basic function to draw the frames at specific line and colum
+*/
 void disp_frame(int line, int colum)
 {
     if (line > LINES || colum > COLS)
@@ -469,7 +525,9 @@ void disp_frame(int line, int colum)
 			*  	- 1.0	-	1.1-
 			*	--------------------
 			*/
-
+/*
+* basic function to draw the titles at specific line and colum
+*/
 void disp_title(char text[], int line, int colum)
 {
     if (line > LINES || colum > COLS)
@@ -483,7 +541,9 @@ void disp_title(char text[], int line, int colum)
     // draw text
     ucg_DrawString(&ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (TITLE_TEXT_HIGHT + TEXT_OFFSET_H), 0, checked_text);
 }
-
+/*
+* basic function to draw the variables at specific line and colum
+*/
 void disp_variable(char text[], int line, int colum)
 {
     if (line > LINES || colum > COLS)
@@ -499,7 +559,9 @@ void disp_variable(char text[], int line, int colum)
     disp_check_text(text, checked_text, MODE_VARIABLE);
     ucg_DrawString(&ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + VAR_TEXT_POSITION_H, 0, checked_text);
 }
-
+/*
+* basic function to clear the variable at specific line and colum
+*/
 void disp_clearVar(int line, int colum)
 {
     if (line > LINES || colum > COLS)
@@ -507,7 +569,10 @@ void disp_clearVar(int line, int colum)
     ucg_SetColor(&ucg, 0, 0, 0, 0);
     ucg_DrawBox(&ucg, colum * FRAME_WIDTH + TEXT_OFFSET_W, line * FRAME_HIGHT + (VAR_TEXT_POSITION_H - VAR_TEXT_HIGHT), VAR_TEXT_LENGTH_MAX, (VAR_TEXT_HIGHT + VAR_TEXT_PLUS));
 }
-
+/*
+* function is used for small displays so 
+* the title or variable does not exceede its range
+*/
 void disp_check_text(char *quelle, char *ziel, char mode)
 {
     char out[16];                    // ausgabe string
