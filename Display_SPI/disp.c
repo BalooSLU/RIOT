@@ -138,6 +138,17 @@ ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, v
             return gcoap_response(pdu, buf, len, COAP_CODE_VALID);
         }
         return gcoap_response(pdu, buf, len, COAP_CODE_NOT_ACCEPTABLE);
+    case COAP_DELETE:
+        strcpy(temp_pay, (char *)pdu->payload);
+        temp_pos = getPosition(temp_pay);
+        if (temp_pos != SPEICHER)
+        {
+            disp_deleteParam(getshowText(temp_pos));
+            return gcoap_response(pdu, buf, len, COAP_CODE_DELETED);
+        }
+        return gcoap_response(pdu, buf, len, COAP_CODE_NOT_ACCEPTABLE);
+    default:
+        return gcoap_response(pdu, buf, len, COAP_CODE_BAD_OPTION);
     }
     return 0;
 }
