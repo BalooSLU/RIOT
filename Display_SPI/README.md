@@ -19,8 +19,8 @@ Push:
 ```
 Usage
 =====
-The created thread uses every usefull function.
-It should be taken as an example for working with the Display.
+The created thread uses every usefull function.//
+It should be taken as an example for working with the Display.//
 To Build, flash and start the application on an ESP32:
 ```
   $ BUILD_IN_DOCKER=1 BOARD=esp32-wroom-32 make all flash term
