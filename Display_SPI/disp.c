@@ -29,11 +29,11 @@ static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_RST));
 
 #define DISP_QUEUE_SIZE (8)
-#define SPEICHER 254 // anzahl speicher
+#define SPEICHER 255 // anzahl speicher
 #define SEPERATOR ";"
 ucg_t ucg;
 
-static showText_t showDown[SPEICHER] = {{"", "", 255, NULL}}; // Fester Speicher
+static showText_t showDown[SPEICHER]; // Fester Speicher
 static msg_t disp_queue[DISP_QUEUE_SIZE];
 void *disp_thread(void *arg)
 {
@@ -43,8 +43,13 @@ void *disp_thread(void *arg)
     disp_init();
     disp_init_buttons(disp_pid);
 
-    puts("Starting Pages");
+    uint8_t i;
+    for (i = 0; i < SPEICHER; i++)
+    { // freier Speicherplatz wird mit Position 255 definiert
+        showDown[i].position = SPEICHER;
+    }
 
+    puts("Starting Pages");
     disp_changePage(0);
     msg_init_queue(disp_queue, DISP_QUEUE_SIZE);
     while (1)
@@ -68,9 +73,12 @@ ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, v
     (void)ctx;
 
     unsigned method_flag = coap_method2flag(coap_get_code_detail(pdu));
-    char *title = NULL;
-    char *variable = NULL;
-    char delimiter[] = ";";
+    char *title;
+    char *variable;
+    char temp_pay[50] = "";
+    char delimiter[2] = ";";
+    uint8_t temp_pos = SPEICHER;
+
     switch (method_flag)
     {
     case COAP_GET:
@@ -78,36 +86,59 @@ ssize_t _dev_disp_parameter_handler(coap_pkt_t *pdu, uint8_t *buf, size_t len, v
         coap_opt_add_format(pdu, COAP_FORMAT_TEXT);
         size_t resp_len = coap_opt_finish(pdu, COAP_OPT_FINISH_PAYLOAD);
 
-        strcpy(title, (char *)pdu->payload);
-        showText_t *resp = getshowText(getPosition(title));
-        resp_len += *resp->title;
-        resp_len += *resp->variable;
-        return resp_len;
-    case COAP_PUT: //aktualisieren
-                   /* update the internal variable based on the title*/
-        strcpy(variable, (char *)pdu->payload);
-        title = strtok(variable, delimiter);
-        if (getPosition(title) != SPEICHER + 1)
+        strcpy(temp_pay, (char *)pdu->payload);
+        temp_pos = getPosition(temp_pay);
+        if (temp_pos != SPEICHER)
         {
-            disp_changeVar(getshowText(getPosition(title)), (char *)pdu->payload);
-            return gcoap_response(pdu, buf, len, COAP_CODE_CHANGED);
+            showText_t *resp = getshowText(temp_pos);
+            if (pdu->payload_len >= strlen(resp->variable))
+            {
+                memcpy(pdu->payload, resp->variable, strlen(resp->variable));
+                resp_len += strlen(resp->variable);
+            }
         }
         else
         {
-            return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
+            char error_resp[22] = "Title not registered.";
+            if (pdu->payload_len >= strlen(error_resp))
+            {
+                memcpy(pdu->payload, error_resp, strlen(error_resp));
+                resp_len += strlen(error_resp);
+            }
         }
-        break;
+        return resp_len;
+    case COAP_PUT: //aktualisieren
+                   /* update the internal variable based on the title*/
+        strcpy(temp_pay, (char *)pdu->payload);
+        title = strtok(temp_pay, delimiter);
+        if (title == NULL)
+            return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
+        variable = strtok(NULL, delimiter);
+        if (variable == NULL)
+            return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
+        temp_pos = getPosition(title);
+        if (temp_pos != SPEICHER)
+        {
+            disp_changeVar(getshowText(temp_pos), variable);
+            return gcoap_response(pdu, buf, len, COAP_CODE_CHANGED);
+        }
+        return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
     case COAP_POST: //erzeugen
-        strcpy(variable, (char *)pdu->payload);
-        title = strtok(variable, delimiter);
+        strcpy(temp_pay, (char *)pdu->payload);
+        title = strtok(temp_pay, delimiter);
+        if (title == NULL)
+            return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
+        variable = strtok(NULL, delimiter);
+        if (variable == NULL)
+            return gcoap_response(pdu, buf, len, COAP_CODE_BAD_REQUEST);
         showText_t *space = getnewspace();
         if (space != NULL)
         {
             disp_addParam(space, title, variable);
+            return gcoap_response(pdu, buf, len, COAP_CODE_VALID);
         }
-        break;
+        return gcoap_response(pdu, buf, len, COAP_CODE_NOT_ACCEPTABLE);
     }
-
     return 0;
 }
 // returns position from title
@@ -119,7 +150,7 @@ uint8_t getPosition(char *title)
         if (current->next == NULL)
         {
             puts("Error: getPosition() -> wrong title");
-            return SPEICHER + 1;
+            return SPEICHER;
         }
         current = current->next;
     }
@@ -130,7 +161,7 @@ showText_t *getnewspace(void)
 {
     showText_t *current = &showDown[0];
     int i = 0;
-    while (current->position != SPEICHER + 1) // wenn position 255 ist dann unbenutzt
+    while (current->position != SPEICHER) // wenn position == 255 ist, dann unbenutzt
     {
         i++;
         if (i == SPEICHER)
@@ -188,7 +219,7 @@ void disp_deleteParam(showText_t *space)
     {
         current->next = NULL; // Parameter aus der liste loeschen
     }
-    space->position = SPEICHER + 1; // position with 255 is unvalid
+    space->position = SPEICHER;     // position == 255, bedeutet freier Speicher
     nr--;                           // loescht ein element aus der globalen Variable
     max_page = disp_get_myPage(nr); // aendert die maximale Seitenzahl
 }
