@@ -32,7 +32,8 @@ The most usefull customizable defines are:
 - The rows and columns number COLS/LINES  
 After changing the variable or title fonts the defines VAR_TEXT_HIGHT/TITLE_TEXT_HIGHT must be adjusted.  
   
-1. Display and touch bottons initialisization
+Examples:
+1. Display and touch buttons initialisization
 ```
     disp_init();
     disp_init_buttons(disp_pid);
@@ -46,7 +47,7 @@ After changing the variable or title fonts the defines VAR_TEXT_HIGHT/TITLE_TEXT
         showDown[i].position = SPEICHER;
     }
 ```
-3. adding ficitious data for testing and presentaion
+3. adding fictious data for testing and presentation
 ```
     
     disp_addParam(&showDown[2], "Hight:", "15");
@@ -57,7 +58,7 @@ After changing the variable or title fonts the defines VAR_TEXT_HIGHT/TITLE_TEXT
 ```
     disp_changePage(0);
 ```
-5. waiting for bottons to be pressed
+5. waiting for buttons to be pressed and changing the page
 ```
         msg_receive(&msg);
         if (msg.content.value == 0)
@@ -68,16 +69,13 @@ After changing the variable or title fonts the defines VAR_TEXT_HIGHT/TITLE_TEXT
         {
             curr_page += 1;
         }
-```
-5.1 and change diplay page
-```
-disp_changePage(curr_page);
+	disp_changePage(curr_page);
 ```
 6. delete a parameter if not longer needed
 ```
 disp_deleteParam(&showDown[3]); 
 ```
-6.1 deleting a parameter with only the title
+6.1 deleting a parameter with only the title as information
 ```
 uint8_t temp_pos = getPosition(title);
         if (temp_pos != SPEICHER)
@@ -89,7 +87,7 @@ uint8_t temp_pos = getPosition(title);
 ```
 disp_changeVar(&showDown[0], "newData");
 ```
-7.1 updating variable with only the title
+7.1 updating variable with only the title as information
 ```
 uint8_t temp_pos = getPosition(title);
         if (temp_pos != SPEICHER)
@@ -97,11 +95,11 @@ uint8_t temp_pos = getPosition(title);
             disp_changeVar(getshowText(temp_pos), variable);
 	}
 ```
-8 creating new space
+8. accessing free space
 ```
 showText_t *space = getnewspace();
 ```
-8.1 creating space and adding to the list
+8.1 accessing free space and adding to the list
 ```
 if (title == NULL)
             return -1;
@@ -116,8 +114,8 @@ if (space != NULL)
 ```
 GCOAP
 =====
-The "title" is the identifier for the parameter, every dublicated parameter must be deleted manaully.  
-Gcoap handler used for:  
+The "title" is the identifier for the parameter, every dublicated parameter must be deleted manually.  
+Gcoap handler functionality:  
 
 * GET "title": returns the values based on the send title  
 * PUT "title;variable": update the internal variable based on the title  
@@ -137,6 +135,6 @@ Pin out for ESP-WROOM-32
 			  	CS	      	-	D5  
 			  	GND	      	-	GND  
 			  	VCC	      	-	VIN  
-        			Up_Botton   	- 	D22  
-        			Down_Bott   	-	D21  
+        			Up_Button   	- 	D22  
+        			Down_Butt   	-	D21  
 		
