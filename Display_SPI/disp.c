@@ -49,6 +49,17 @@ void *disp_thread(void *arg)
         showDown[i].position = SPEICHER;
     }
 
+    disp_addParam(&showDown[0], "Humitity:", "18");
+    disp_addParam(&showDown[1], "Temp:", "5");
+    disp_addParam(&showDown[2], "Hight:", "15");
+    disp_addParam(&showDown[3], "Batt:", "82");
+    disp_addParam(&showDown[4], "State:", "save");
+    disp_addParam(&showDown[5], "People:", "15");
+    disp_addParam(&showDown[6], "Injuired:", "82");
+    disp_addParam(&showDown[7], "Help:", "not");
+    disp_addParam(&showDown[8], "Date:", "13Jan2020");
+    disp_addParam(&showDown[9], "Time:", "-");
+    disp_addParam(&showDown[10], "State:", "save");
     puts("Starting Pages");
     disp_changePage(0);
     msg_init_queue(disp_queue, DISP_QUEUE_SIZE);
