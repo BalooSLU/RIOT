@@ -1,7 +1,7 @@
 Usefull git commands
 ================
 Get:
-...
+```
     $ git clone https://github.com/BalooSLU/RIOT.git
     $ git branch
     $ git checkout Display
@@ -9,14 +9,14 @@ Get:
     $ git config --global user.name "UserName"
     $ git config --global user.email "Email"
     $ git config --global color.ui "auto"
-...
+```
 Push:
-...
+```
     $ git add DATEI
     $ git add *
     $ git commit -m "Changes Comment"
     $ git push
-...
+```
 Usage
 =====
 The created thread uses every usefull function.
@@ -35,16 +35,16 @@ After changing the variable or title fonts the defines VAR_TEXT_HIGHT/TITLE_TEXT
 Pinout
 ======
 Pin out for ESP-WROOM-32
-          Diplay  	-	MCU
-			-----------------------------
-				  LED	      -	3V3
-			  	SCK	      -	D18
-			  	SDA	      -	D23
-			  	A0	      -	D14
-			  	RESET	    -	D2
-			  	CS	      -	D5
-			  	GND	      -	GND
-			  	VCC	      -	VIN
-        Up_Botton   - D22
-        Down_Bott   - D21
+          			Diplay  	-	MCU
+				-----------------------------
+				LED	      	-	3V3
+			  	SCK	      	-	D18
+			  	SDA	      	-	D23
+			  	A0	      	-	D14
+			  	RESET	    	-	D2
+			  	CS	      	-	D5
+			  	GND	      	-	GND
+			  	VCC	      	-	VIN
+        			Up_Botton   	- 	D22
+        			Down_Bott   	-	D21
 		
