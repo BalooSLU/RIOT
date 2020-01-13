@@ -21,8 +21,8 @@ static gpio_t pins[] = {
 			*  	CS	-	D5
 			*  	GND	-	GND
 			*  	VCC	-	VIN
-            * Up_Botton - D22
-            * Down_Bott - D21
+            * Up_Button - D22
+            * Down_Butt - D21
 			*/
 static uint32_t pins_enabled = ((1 << UCG_PIN_CS) +
                                 (1 << UCG_PIN_CD) +
@@ -40,7 +40,7 @@ void *disp_thread(void *arg)
 {
     msg_t msg;
     kernel_pid_t *disp_pid = (kernel_pid_t *)arg;
-    //1. Dispaly and Touch Bottons initialisization
+    //1. Dispaly and Touch Buttons initialisization
     disp_init();
     disp_init_buttons(disp_pid);
     //2. predefine your space with position == 255 for showing free usage
@@ -68,7 +68,7 @@ void *disp_thread(void *arg)
     msg_init_queue(disp_queue, DISP_QUEUE_SIZE);
     while (1)
     {
-        //5. waiting for bottons to be pressed
+        //5. waiting for buttons to be pressed
         msg_receive(&msg);
         if (msg.content.value == 0)
         {
@@ -310,7 +310,7 @@ uint8_t disp_get_myPage(uint8_t position)
 }
 /*
 * Handler for going one page further
-* Gpio Interrupt hander triggered from one botton
+* Gpio Interrupt hander triggered from one button
 */
 void disp_pin_up_handler(void *arg)
 {
@@ -327,7 +327,7 @@ void disp_pin_up_handler(void *arg)
 }
 /*
 * Handler for going one page back
-* Gpio Interrupt hander triggered from one botton
+* Gpio Interrupt hander triggered from one button
 */
 void disp_pin_down_handler(void *arg)
 {
@@ -398,7 +398,7 @@ void disp_init(void)
     ucg_SetFontPosBaseline(&ucg);
 }
 /*
-* initialize the pins for the bottons
+* initialize the pins for the buttons
 * so the pages can be changed  
 */
 void disp_init_buttons(kernel_pid_t *disp_pid)
